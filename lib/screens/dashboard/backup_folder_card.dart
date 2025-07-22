@@ -116,7 +116,7 @@ class BackupFolderCard extends StatelessWidget {
                       child: Text(
                         Platform.isAndroid
                             ? folderProvider.backupFolder!.path.replaceFirst('/storage/emulated/0/', 'Internal Memory/')
-                            : folderProvider.backupFolder!.path.replaceAll('/', '\\'),
+                            : folderProvider.backupFolder!.path,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurface,
                           fontFamily: Platform.isWindows ? 'monospace' : null,

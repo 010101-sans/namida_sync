@@ -136,6 +136,10 @@ See the [Releases page](https://github.com/010101-sans/namida_sync/releases) for
 - [Flutter Team](https://github.com/flutter/flutter) for the amazing framework.
 - All open source package maintainers and contributors who make Namida Sync possible.
 
+## Logo Attribution
+
+- The Namida Sync logo was created by me, based on Namida's official logo, in a minimal vector art style.
+
 ## Contributing
 
 - Found a bug or have a feature request? [Open an issue](../../issues)
@@ -149,6 +153,3 @@ This project is licensed under the [MIT License](LICENSE).
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes and version history.
-
-backup restore music-library sync open-source
- 

@@ -51,8 +51,8 @@ flutter build windows --release
 - To create a zip for distribution:
   ```sh
   cd build/windows/runner/
-  mv Release NamidaSync-v1.0.0
-  zip -r NamidaSync-Windows-vX.Y.Z.zip Release/
+  mv Release "Namida Sync - vX.Y.Z"
+  zip -r NamidaSync-Windows-vX.Y.Z.zip "Namida Sync - vX.Y.Z"/
   ```
 - Replace `vX.Y.Z` with your version number.
 
