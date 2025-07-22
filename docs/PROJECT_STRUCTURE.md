@@ -1,4 +1,4 @@
-# Project Structure for Namida Sync (Updated)
+# Project Structure for Namida Sync
 
 Namida Sync uses a modular, maintainable project structure for scalability, clarity, and ease of development. Shared code is centralized for reuse, and all changes are reflected in this documentation and in the README.
 
@@ -72,10 +72,10 @@ lib/
 - **test/**: Unit and widget tests, mirroring the lib/ structure.
 - **docs/**: Project documentation, including:
   - `PROJECT_STRUCTURE.md` (this file)
-  - `NAMIDA_BACKUP_AND_MUSIC_FOLDER_LOGIC.md` (detailed folder/manifest logic)
+  - `BACKUP_LOGIC.md` (detailed folder/manifest logic)
   - `NAMIDA_ABOUT_PAGE_UI.md` (UI/UX and theming reference)
   - `GOOGLE_DRIVE_INTEGRATION.md` (Drive integration details)
-- **assets/**: Images, icons, fonts, etc.
+- **assets/**: Images, fonts, etc.
 
 ## Notes
 - Firebase initialization is handled in `lib/main.dart` using the generated `firebase_options.dart`.
