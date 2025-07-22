@@ -23,7 +23,7 @@ A: Use a stable internet connection. Large libraries may take time.
 ## Google Drive
 
 **Q: Why does Namida Sync use Google Drive for backup and restore?**  
-A: Google Drive is widely available, secure, and offers **generous free storage**. It allows you to access your backups from any device, supports large files, and integrates well with both Android and Windows. Using Google Drive also means you don’t need to set up your own server or pay for extra services, unless your music liberary size goes beyound free storage limit (15 GB per Google Account).
+A: Google Drive is widely available, secure, and offers **generous free storage**. It allows you to access your backups from any device, supports large files, and integrates well with both Android and Windows. Using Google Drive also means you don’t need to set up your own server or pay for extra services, unless your music liberary size goes beyond free storage limit (15 GB per Google Account).
 
 **Q: Google sign-in fails or times out.**  
 A: Try signing out and back in. Check your internet connection.
@@ -45,4 +45,4 @@ A: See [docs/testing.md](testing.md).
 A: See [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 **Q: How do I set up secrets?**  
-A: See [docs/secrets.md](secrets.md) and the README's Secret Management section.
+A: See [docs/secrets.md](secrets.md).
