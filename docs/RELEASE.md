@@ -51,6 +51,7 @@ flutter build windows --release
 - To create a zip for distribution:
   ```sh
   cd build/windows/runner/
+  mv Release NamidaSync-v1.0.0
   zip -r NamidaSync-Windows-vX.Y.Z.zip Release/
   ```
 - Replace `vX.Y.Z` with your version number.
@@ -70,10 +71,12 @@ git push origin v1.0.0
 3. Set the tag (e.g., `v1.0.0`) and title (e.g., `Namida Sync v1.0.0`).
 4. Add release notes (copy from `CHANGELOG.md`).
 5. Attach the following files:
-   - `app-release.apk` (universal APK)
-   - Split APKs (if desired)
-   - `app-release.aab` (if publishing to Play Store)
-   - `NamidaSync-Windows-vX.Y.Z.zip` (zipped Windows build)
+  - `app-release.apk` (universal APK)
+  - Split APKs (if desired)
+  - `app-release.aab` (if publishing to Play Store)
+  - `NamidaSync-Windows-vX.Y.Z.zip` (zipped Windows build)
+  - Any generated `.sha1` checksum files for your release assets (optional but recommended for integrity verification).  
+  - If present, upload the `.sha1` files alongside their corresponding assets so users can verify downloads.
 6. Publish the release.
 
 ### c. Update Documentation

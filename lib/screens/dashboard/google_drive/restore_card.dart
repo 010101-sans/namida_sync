@@ -418,7 +418,7 @@ class _GoogleDriveRestoreCardState extends State<GoogleDriveRestoreCard> {
                                 side: BorderSide(color: primaryColor, width: 2),
                                 foregroundColor: primaryColor,
                                 backgroundColor: theme.colorScheme.surface,
-                                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 elevation: 2,
                               ),
@@ -433,7 +433,7 @@ class _GoogleDriveRestoreCardState extends State<GoogleDriveRestoreCard> {
                               icon: Icon(Iconsax.cloud_plus, size: 24),
                               label: const Text('Restore', style: TextStyle(fontSize: 15)),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                                 side: BorderSide(color: primaryColor, width: 2),
                                 foregroundColor: primaryColor,
                                 backgroundColor: theme.colorScheme.surface,

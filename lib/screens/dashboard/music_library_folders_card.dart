@@ -187,7 +187,7 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       onPressed: folderProvider.musicFolders[i].isLoading ? null : () => onRemoveMusicFolder(i),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(width: 10),
                   ],
                 ),
               ),

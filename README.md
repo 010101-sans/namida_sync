@@ -114,11 +114,13 @@ A seamless backup and restore companion app for the [Namida Music & Video Player
 See the [Releases page](https://github.com/010101-sans/namida_sync/releases) for all downloads.
 
 - **Android :**  
-  - If you are not sure which version to download, then [download Universal APK](https://github.com/010101-sans/namida_sync/releases/download/v1.0.0/app-universal-release.apk)  
+  - If you are not sure which version to download, then [download Universal APK](https://github.com/010101-sans/namida_sync/releases/download/v1.0.0/app-release.apk)  
   - If you know your device's architecture, you can download a specific APK from the [Releases page](https://github.com/010101-sans/namida_sync/releases).
 
 - **Windows :**  
   - [Download the Windows ZIP file](https://github.com/010101-sans/namida_sync/releases/download/v1.0.0/NamidaSync-Windows-v1.0.0.zip), extract it to a folder of your choice, and then run `namida_sync.exe` inside the extracted folder.
+
+
 
 #### **⭐️ Star this repo if you liked Namida Sync**  
 
@@ -148,3 +150,5 @@ This project is licensed under the [MIT License](LICENSE).
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes and version history.
 
+backup restore music-library sync open-source
+ 
