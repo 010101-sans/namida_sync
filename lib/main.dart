@@ -10,7 +10,8 @@ import 'utils/utils.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'dart:io';
 
-void main() async {
+void main(List<String> args) async {
+    
   // [1] Ensure Flutter bindings are initialized before any async operations.
   WidgetsFlutterBinding.ensureInitialized();
   // debugPrint('[main] Flutter bindings initialized.');
@@ -41,30 +42,24 @@ void main() async {
     return null;
   });
 
-  // [3] Windows: Parse protocol URI if present
+  // Windows: Parse command-line arguments for config
   String? initialBackupPath;
   List<String>? initialMusicFolders;
-  if (Platform.isWindows && Platform.executableArguments.isNotEmpty) {
-    final uriArg = Platform.executableArguments.firstWhere(
-      (arg) => arg.startsWith('namidasync://'),
-      orElse: () => '',
-    );
-    if (uriArg.isNotEmpty) {
-      try {
-        final uri = Uri.parse(uriArg);
-        initialBackupPath = uri.queryParameters['backupPath'];
-        final musicFoldersStr = uri.queryParameters['musicFolders'];
-        if (musicFoldersStr != null && musicFoldersStr.isNotEmpty) {
-          initialMusicFolders = musicFoldersStr.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-        }
-      } catch (_) {}
+  if (Platform.isWindows && args.isNotEmpty) {
+    for (final arg in args) {
+      if (arg.startsWith('--backupPath=')) {
+        initialBackupPath = arg.substring('--backupPath='.length).replaceAll('"', '');
+      } else if (arg.startsWith('--musicFolders=')) {
+        final folders = arg.substring('--musicFolders='.length).replaceAll('"', '');
+        initialMusicFolders = folders.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      }
     }
   }
 
   runApp(NamidaSyncApp(
-    initialBackupPath: globalBackupPath ?? initialBackupPath,
-    initialMusicFolders: globalMusicFolders ?? initialMusicFolders,
-  ));
+    initialBackupPath: initialBackupPath,
+    initialMusicFolders: initialMusicFolders,
+  ),);
 }
 
 class NamidaSyncApp extends StatelessWidget {

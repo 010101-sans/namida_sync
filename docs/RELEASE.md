@@ -22,6 +22,7 @@ flutter build apk --release
 #### b. Split APKs (per architecture, smaller size)
 ```sh
 flutter build apk --release --split-per-abi
+
 ```
 - Outputs:
   - `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
@@ -39,6 +40,7 @@ flutter build appbundle --release
 #### a. Build Windows release
 ```sh
 flutter build windows --release
+
 ```
 - Output folder: `build/windows/runner/Release/`
 - The folder contains:

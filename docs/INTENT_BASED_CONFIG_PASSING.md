@@ -1,4 +1,7 @@
-# Intent-Based Config Passing Between "Namida Intent Demo" (later to be integrated into Namida) and Namida Sync 
+# Intent-Based Config Passing Between "Namida Intent Demo" and Namida Sync 
+
+- "Namida Intent Demo" will be adapted into Namida, and it is a demo application (android/windows) to show config passing from Namida to Namida Sync.
+- 
 
 ## Android
 
@@ -123,3 +126,94 @@ val musicFoldersStr = intent.getStringExtra("musicFolders")
 
 ### Summary
 This approach gives you full, reliable, and future-proof control over cross-app config passing on Android, and is compatible with all modern Flutter and Android versions. 
+
+## Windows
+
+### Overview
+This section explains how to implement robust, user-friendly config passing from **Namida Intent Demo** to **Namida Sync** on Windows, using an EXE picker, shared_preferences, and command-line arguments.
+
+### Motivation
+- **Goal:** Allow Namida Intent Demo to launch Namida Sync and pass configuration (backup folder and music folders) reliably, even if the user moves the EXE or installs updates.
+- **Why not use protocol handlers?**
+  - Protocol handlers require registry edits and are less user-friendly for portable or development setups.
+  - The EXE picker approach is more flexible and user-driven.
+
+### Solution: EXE Picker + Command-Line Arguments
+- On first use, the user is prompted to pick the path to `namida_sync.exe`.
+- The path is stored in `shared_preferences` for future launches.
+- When launching, Namida Intent Demo starts the EXE with `--backupPath` and `--musicFolders` as command-line arguments.
+- Namida Sync parses these arguments on startup and applies the config.
+
+#### **Key Benefits**
+- No registry or system-level setup required.
+- User can move or update the EXE and re-pick as needed.
+- Works in both development and production builds.
+
+### Implementation Details
+
+#### 1. **Flutter Side (Namida Intent Demo)**
+- **On Windows:**
+  - If the EXE path is not set, prompt the user to pick it using FilePicker.
+  - Store the path in shared_preferences.
+  - Launch the EXE with config as command-line arguments.
+
+**Dart code:**
+```dart
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+
+Future<void> sendIntentToNamidaSyncWindows() async {
+  final prefs = await SharedPreferences.getInstance();
+  String? exePath = prefs.getString('namidaSyncExePath');
+  if (exePath == null || !File(exePath).existsSync()) {
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['exe']);
+    if (result == null || result.files.single.path == null) {
+      // User cancelled
+      return;
+    }
+    exePath = result.files.single.path!;
+    await prefs.setString('namidaSyncExePath', exePath);
+  }
+  final musicFoldersStr = musicFolders.where((e) => e != null && e.isNotEmpty).join(',');
+  final args = [
+    '--backupPath="$backupFolder"',
+    '--musicFolders="$musicFoldersStr"',
+  ];
+  await Process.start(exePath!, args);
+}
+```
+- The UI shows the current EXE path and allows the user to change it.
+
+#### 2. **Flutter Side (Namida Sync)**
+- **On Windows startup:**
+  - Parse command-line arguments for `--backupPath` and `--musicFolders`.
+  - Use these as the initial config for the app.
+
+**Dart code:**
+```dart
+void main(List<String> args) {
+  String? backupPath;
+  List<String> musicFolders = [];
+  for (final arg in args) {
+    if (arg.startsWith('--backupPath=')) {
+      backupPath = arg.substring('--backupPath='.length).replaceAll('"', '');
+    } else if (arg.startsWith('--musicFolders=')) {
+      final folders = arg.substring('--musicFolders='.length).replaceAll('"', '');
+      musicFolders = folders.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+  }
+  runApp(NamidaSyncApp(
+    initialBackupPath: backupPath,
+    initialMusicFolders: musicFolders,
+  ));
+}
+```
+
+### Troubleshooting & Best Practices
+- **Show the current EXE path in the UI** and allow the user to change it.
+- **Handle missing or moved EXE gracefully** (prompt the user to pick again).
+- **Always quote paths** in command-line arguments to handle spaces.
+- **For development:**
+  - Use the built EXE from `build/windows/runner/Release/namida_sync.exe`.
+  - In debug mode, you can run the EXE with arguments from the command line.
