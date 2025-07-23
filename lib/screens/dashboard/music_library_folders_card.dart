@@ -185,7 +185,9 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                       tooltip: 'Remove',
                       constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
-                      onPressed: folderProvider.musicFolders[i].isLoading ? null : () => onRemoveMusicFolder(i),
+                      onPressed: folderProvider.musicFolders[i].isLoading
+                          ? null
+                          : () async => await onRemoveMusicFolder(i),
                     ),
                     const SizedBox(width: 10),
                   ],

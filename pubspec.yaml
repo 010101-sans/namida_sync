@@ -54,6 +54,7 @@ dependencies:
   iconsax: ^0.0.8
   path:
   flutter_launcher_icons: ^0.14.4
+  android_intent_plus: ^5.3.0
 
 dev_dependencies:
   flutter_test:

@@ -125,7 +125,18 @@ class FolderProvider extends ChangeNotifier {
     }
   }
 
-  // [10] Public method to refresh the music folder list and their statuses.
+  // [10] Replaces all music folders with the provided list and persists them.
+  Future<void> setMusicFolders(List<String> paths) async {
+    isLoading = true;
+    notifyListeners();
+    musicFolders = paths.map((p) => MusicFolderInfo(path: p, isLoading: true)).toList();
+    await FolderService.saveMusicFolders(paths);
+    await validateAll();
+    isLoading = false;
+    notifyListeners();
+  }
+
+  // [11] Public method to refresh the music folder list and their statuses.
   Future<void> refreshFolderList() async {
     // debugPrint('[FolderProvider] Refreshing folder list.');
     await loadFolders();

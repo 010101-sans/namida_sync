@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:flutter/services.dart';
 
 import '../../providers/providers.dart';
 import '../../utils/utils.dart';
@@ -31,6 +32,8 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
   late FolderProvider _folderProvider;
   late VoidCallback _folderListener;
 
+  static const platform = MethodChannel('com.sanskar.namidasync/intent');
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +41,36 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
     _folderListener = _findLatestBackupFile;
     _folderProvider.addListener(_folderListener);
     // debugPrint('[DashBoardScreen] initState: Listener added and folders will be loaded.');
+
+    // Listen for intent data from Android
+    platform.setMethodCallHandler((call) async {
+      if (call.method == 'onIntentReceived') {
+        var backupPath = call.arguments['backupPath'] as String?;
+        var musicFoldersRaw = call.arguments['musicFolders'];
+        List<String> musicFolders;
+        if (musicFoldersRaw is String) {
+          musicFolders = musicFoldersRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        } else if (musicFoldersRaw is List) {
+          musicFolders = musicFoldersRaw.cast<String>();
+        } else {
+          musicFolders = [];
+        }
+        print('Received musicFolders: $musicFolders');
+        if (backupPath != null && backupPath.isNotEmpty) {
+          await _folderProvider.setBackupFolder(backupPath);
+        }
+        if (musicFolders.isNotEmpty) {
+          await _folderProvider.setMusicFolders(musicFolders);
+        }
+        // Always reload folders from storage to ensure UI is up to date
+        await _folderProvider.loadFolders();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Received config from Namida and updated folders.')),
+          );
+        }
+      }
+    });
 
     // Prompt for storage permission on first app open
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -253,7 +286,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         final theme = Theme.of(context);
         final primaryColor = theme.colorScheme.primary;
 
-        // [1] Main Content Column
+        // [1] Main Content Column  
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: UIConstants.spacingM, horizontal: 0),
           children: [
