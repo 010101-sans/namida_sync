@@ -24,6 +24,13 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Back stack fix: prevent duplicate activities
+        if (!isTaskRoot
+            && intent.hasCategory(Intent.CATEGORY_LAUNCHER)
+            && intent.action == Intent.ACTION_MAIN) {
+            finish()
+            return
+        }
         handleIntent(intent)
     }
 

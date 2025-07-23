@@ -18,7 +18,9 @@ import 'backup_folder_card.dart';
 import 'music_library_folders_card.dart';
 
 class DashBoardScreen extends StatefulWidget {
-  const DashBoardScreen({super.key});
+  final String? initialBackupPath;
+  final List<String>? initialMusicFolders;
+  const DashBoardScreen({super.key, this.initialBackupPath, this.initialMusicFolders});
 
   @override
   State<DashBoardScreen> createState() => _DashBoardScreenState();
@@ -33,6 +35,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
   late VoidCallback _folderListener;
 
   static const platform = MethodChannel('com.sanskar.namidasync/intent');
+  static bool _channelInitialized = false;
 
   @override
   void initState() {
@@ -42,35 +45,59 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
     _folderProvider.addListener(_folderListener);
     // debugPrint('[DashBoardScreen] initState: Listener added and folders will be loaded.');
 
-    // Listen for intent data from Android
-    platform.setMethodCallHandler((call) async {
-      if (call.method == 'onIntentReceived') {
-        var backupPath = call.arguments['backupPath'] as String?;
-        var musicFoldersRaw = call.arguments['musicFolders'];
-        List<String> musicFolders;
-        if (musicFoldersRaw is String) {
-          musicFolders = musicFoldersRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-        } else if (musicFoldersRaw is List) {
-          musicFolders = musicFoldersRaw.cast<String>();
-        } else {
-          musicFolders = [];
-        }
-        print('Received musicFolders: $musicFolders');
-        if (backupPath != null && backupPath.isNotEmpty) {
-          await _folderProvider.setBackupFolder(backupPath);
-        }
-        if (musicFolders.isNotEmpty) {
-          await _folderProvider.setMusicFolders(musicFolders);
-        }
-        // Always reload folders from storage to ensure UI is up to date
-        await _folderProvider.loadFolders();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Received config from Namida and updated folders.')),
-          );
-        }
+    // Windows: Apply initial config if present
+    if (Platform.isWindows) {
+      final backupPath = widget.initialBackupPath;
+      final musicFolders = widget.initialMusicFolders;
+      if (backupPath != null && backupPath.isNotEmpty) {
+        _folderProvider.setBackupFolder(backupPath);
       }
-    });
+      if (musicFolders != null && musicFolders.isNotEmpty) {
+        _folderProvider.setMusicFolders(musicFolders);
+      }
+      if ((backupPath != null && backupPath.isNotEmpty) || (musicFolders != null && musicFolders.isNotEmpty)) {
+        _folderProvider.loadFolders();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Received config from Namida (Windows protocol) and updated folders.')),
+            );
+          }
+        });
+      }
+    }
+
+    // Android: Listen for intent data globally, only once
+    if (!_channelInitialized) {
+      platform.setMethodCallHandler((call) async {
+        if (call.method == 'onIntentReceived') {
+          var backupPath = call.arguments['backupPath'] as String?;
+          var musicFoldersRaw = call.arguments['musicFolders'];
+          List<String> musicFolders;
+          if (musicFoldersRaw is String) {
+            musicFolders = musicFoldersRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+          } else if (musicFoldersRaw is List) {
+            musicFolders = musicFoldersRaw.cast<String>();
+          } else {
+            musicFolders = [];
+          }
+          if (backupPath != null && backupPath.isNotEmpty) {
+            await _folderProvider.setBackupFolder(backupPath);
+          }
+          if (musicFolders.isNotEmpty) {
+            await _folderProvider.setMusicFolders(musicFolders);
+          }
+          await _folderProvider.loadFolders();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Received config from Namida and updated folders.')),
+            );
+          }
+        }
+        return null;
+      });
+      _channelInitialized = true;
+    }
 
     // Prompt for storage permission on first app open
     WidgetsBinding.instance.addPostFrameCallback((_) async {
