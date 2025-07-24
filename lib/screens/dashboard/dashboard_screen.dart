@@ -16,6 +16,9 @@ import 'google_drive/google_account.dart';
 
 import 'backup_folder_card.dart';
 import 'music_library_folders_card.dart';
+import '../../providers/local_network_provider.dart';
+import '../../widgets/icon_label_button.dart';
+import '../../widgets/custom_card.dart';
 
 class DashBoardScreen extends StatefulWidget {
   final String? initialBackupPath;
@@ -33,6 +36,9 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
 
   late FolderProvider _folderProvider;
   late VoidCallback _folderListener;
+
+  int _selectedSyncMethod = 0; // 0 = Local, 1 = Google Drive
+  final PageController _pageController = PageController();
 
   static const platform = MethodChannel('com.sanskar.namidasync/intent');
   static bool _channelInitialized = false;
@@ -89,9 +95,9 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
           }
           await _folderProvider.loadFolders();
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Received config from Namida and updated folders.')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Received config from Namida and updated folders.')));
           }
         }
         return null;
@@ -313,7 +319,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         final theme = Theme.of(context);
         final primaryColor = theme.colorScheme.primary;
 
-        // [1] Main Content Column  
+        // [1] Main Content Column
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: UIConstants.spacingM, horizontal: 0),
           children: [
@@ -340,33 +346,164 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
               ),
             ),
 
-            // [4] GoogleAccount
-            GoogleAccount(
-              isSignedIn: isSignedIn,
-              user: user,
-              primaryColor: primaryColor,
-              onSignIn: () async {
-                try {
-                  await authProvider.authService.signIn();
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
-                }
-              },
-              onSignOut: () async {
-                await authProvider.authService.signOut();
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed out')));
-              },
-              isLoading: authProvider.isLoading,
+            // [4] Row of IconLabelButtons for sync method selection
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // [4.1] Local Transfer
+                  IconLabelButton(
+                    icon: Icons.sync_alt,
+                    label: 'Local',
+                    selected: _selectedSyncMethod == 0,
+                    onTap: () {
+                      setState(() {
+                        _selectedSyncMethod = 0;
+                        _pageController.animateToPage(
+                          0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 16),
+                  // [4.2] Google Drive
+                  IconLabelButton(
+                    icon: Icons.cloud,
+                    label: 'GDrive',
+                    selected: _selectedSyncMethod == 1,
+                    onTap: () {
+                      setState(() {
+                        _selectedSyncMethod = 1;
+                        _pageController.animateToPage(
+                          1,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      });
+                    },
+                  ),
+                ],
+              ),
             ),
 
-            // [5] Google Drive Cards (only if signed in)
-            if (isSignedIn) ...[
-              // [5.1] GoogleDriveBackupCard
-              const GoogleDriveBackupCard(),
+            // [5] PageView for sync method sections
+            SizedBox(
+              height: 520, // Adjust as needed for card heights
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) {
+                  setState(() {
+                    _selectedSyncMethod = index;
+                  });
+                },
+                children: [
+                  // [5.1] Local Transfer Page
+                  Column(
+                    children: [
+                      // [5.1.1] Local Transfer Setup Card
+                      CustomCard(
+                        leadingIcon: Icons.settings,
+                        title: 'Local Transfer Setup',
+                        body: const SizedBox(height: 90, child: Center(child: Text('Local Transfer Setup Card'))),
+                      ),
+                      // [5.1.2] Local Transfer Backup Card
+                      CustomCard(
+                        leadingIcon: Icons.backup,
+                        title: 'Local Transfer Backup',
+                        body: const SizedBox(height: 90, child: Center(child: Text('Local Transfer Backup Card'))),
+                      ),
+                      // [5.1.3] Local Transfer Restore Card
+                      CustomCard(
+                        leadingIcon: Icons.restore,
+                        title: 'Local Transfer Restore',
+                        body: const SizedBox(height: 90, child: Center(child: Text('Local Transfer Restore Card'))),
+                      ),
+                    ],
+                  ),
+                  // [5.2] Google Drive Page
+                  Column(
+                    children: [
+                      // [5.2.1] Google Drive Setup Card
+                      GoogleAccount(
+                        isSignedIn: isSignedIn,
+                        user: user,
+                        primaryColor: primaryColor,
+                        onSignIn: () async {
+                          try {
+                            await authProvider.authService.signIn();
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
+                          }
+                        },
+                        onSignOut: () async {
+                          await authProvider.authService.signOut();
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed out')));
+                        },
+                        isLoading: authProvider.isLoading,
+                      ),
+                      // [5] Google Drive Cards (only if signed in)
+                      if (isSignedIn) ...[
+                        // [5.1] GoogleDriveBackupCard
+                        const GoogleDriveBackupCard(),
+                        // [5.2] GoogleDriveRestoreCard
+                        GoogleDriveRestoreCard(onRestoreComplete: _folderProvider.refreshFolderList),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
-              // [5.2] GoogleDriveRestoreCard
-              GoogleDriveRestoreCard(onRestoreComplete: _folderProvider.refreshFolderList),
-            ],
+            // [LAN] Debug/Test Card for Local Network Discovery
+            Consumer<LocalNetworkProvider>(
+              builder: (context, lanProvider, _) {
+                if (lanProvider == null) return const SizedBox.shrink();
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('LAN Devices (Debug)', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await lanProvider.startDiscovery(alias: 'NamidaSync', port: 53317);
+                              },
+                              child: const Text('Start Discovery'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () {
+                                lanProvider.stop();
+                              },
+                              child: const Text('Stop'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (lanProvider.devices.isEmpty) const Text('No devices found.'),
+                        if (lanProvider.devices.isNotEmpty)
+                          ...lanProvider.devices.map(
+                            (d) => ListTile(
+                              leading: const Icon(Icons.devices),
+                              title: Text(d.alias),
+                              subtitle: Text('${d.ip}:${d.port}'),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ],
         );
       },
@@ -417,40 +554,137 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // [1.1.3] GoogleAccount
-                        GoogleAccount(
-                          isSignedIn: isSignedIn,
-                          user: user,
-                          primaryColor: primaryColor,
-                          onSignIn: () async {
-                            try {
-                              await authProvider.authService.signIn();
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
-                            }
-                          },
-                          onSignOut: () async {
-                            await authProvider.authService.signOut();
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed out')));
-                          },
-                          isLoading: authProvider.isLoading,
+                        // [1.1.3] Row of IconLabelButtons for sync method selection
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // [1.1.3.1] Local Transfer
+                              IconLabelButton(
+                                icon: Icons.sync_alt,
+                                label: 'Local',
+                                selected: _selectedSyncMethod == 0,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSyncMethod = 0;
+                                    _pageController.animateToPage(
+                                      0,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 16),
+                              // [1.1.3.2] Google Drive
+                              IconLabelButton(
+                                icon: Icons.cloud,
+                                label: 'GDrive',
+                                selected: _selectedSyncMethod == 1,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSyncMethod = 1;
+                                    _pageController.animateToPage(
+                                      1,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 20),
 
-                  // [1.2] Right column
+                  // [1.2] Right column : PageView for sync method sections
                   Expanded(
-                    child: Column(
-                      children: [
-                        // [1.2.1] GoogleDriveBackupCard (only show if signed in)
-                        if (isSignedIn) const GoogleDriveBackupCard(),
-                        const SizedBox(height: 20),
-
-                        // [1.2.2] GoogleDriveRestoreCard
-                        if (isSignedIn) GoogleDriveRestoreCard(onRestoreComplete: _folderProvider.refreshFolderList),
-                      ],
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          PageView(
+                            controller: _pageController,
+                            physics: const NeverScrollableScrollPhysics(),
+                            onPageChanged: (index) {
+                              setState(() {
+                                _selectedSyncMethod = index;
+                              });
+                            },
+                            children: [
+                              // [1.1.4.1] Local Transfer Page
+                              Column(
+                                children: [
+                                  // [1.1.4.1.1] Local Transfer Setup Card
+                                  CustomCard(
+                                    leadingIcon: Icons.settings,
+                                    title: 'Local Transfer Setup',
+                                    body: const SizedBox(
+                                      height: 90,
+                                      child: Center(child: Text('Local Transfer Setup Card')),
+                                    ),
+                                  ),
+                                  // [1.1.4.1.2] Local Transfer Backup Card
+                                  CustomCard(
+                                    leadingIcon: Icons.backup,
+                                    title: 'Local Transfer Backup',
+                                    body: const SizedBox(
+                                      height: 90,
+                                      child: Center(child: Text('Local Transfer Backup Card')),
+                                    ),
+                                  ),
+                                  // [1.1.4.1.3] Local Transfer Restore Card
+                                  CustomCard(
+                                    leadingIcon: Icons.restore,
+                                    title: 'Local Transfer Restore',
+                                    body: const SizedBox(
+                                      height: 90,
+                                      child: Center(child: Text('Local Transfer Restore Card')),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // [1.1.4.2] Google Drive Page
+                              Column(
+                                children: [
+                                  // [1.1.4.2.1] Google Drive Setup Card
+                                  GoogleAccount(
+                                    isSignedIn: isSignedIn,
+                                    user: user,
+                                    primaryColor: primaryColor,
+                                    onSignIn: () async {
+                                      try {
+                                        await authProvider.authService.signIn();
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
+                                      }
+                                    },
+                                    onSignOut: () async {
+                                      await authProvider.authService.signOut();
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(const SnackBar(content: Text('Signed out')));
+                                    },
+                                    isLoading: authProvider.isLoading,
+                                  ),
+                                  // [1.1.4.2.2] Google Drive Cards (only if signed in)
+                                  if (isSignedIn) ...[
+                                    // [1.1.4.2.2.1] GoogleDriveBackupCard
+                                    const GoogleDriveBackupCard(),
+                                    // [1.1.4.2.2.2] GoogleDriveRestoreCard
+                                    GoogleDriveRestoreCard(onRestoreComplete: _folderProvider.refreshFolderList),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

@@ -55,6 +55,7 @@ dependencies:
   path:
   flutter_launcher_icons: ^0.14.4
   android_intent_plus: ^5.3.0
+  udp: ^5.0.3
 
 dev_dependencies:
   flutter_test:
