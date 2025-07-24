@@ -126,9 +126,6 @@ val musicFoldersStr = intent.getStringExtra("musicFolders")
 - [Flutter Platform Channels Guide](https://decode.agency/article/flutter-platform-channels-guide/)
 - [Flutter Platform Channels](https://medium.com/codingmountain-blog/flutter-platform-channels-6e78c2fc75dc)
 
-### Summary
-This approach gives you full, reliable, and future-proof control over cross-app config passing on Android, and is compatible with all modern Flutter and Android versions. 
-
 ## Windows
 
 ### Overview
