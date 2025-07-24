@@ -27,10 +27,10 @@ This document describes how to implement a **local network backup/restore** feat
 - **Session-based:**  
   Each transfer is a session, with metadata exchanged before file transfer.
 - **REST API Endpoints:**  
-  - `/api/localsend/v2/register` — Device registration
-  - `/api/localsend/v2/prepare-upload` — Initiate file transfer, send manifest/metadata
-  - `/api/localsend/v2/upload` — Actual file upload (POST)
-  - `/api/localsend/v2/cancel` — Cancel session
+  - `/api/localsend/v2/register` - Device registration
+  - `/api/localsend/v2/prepare-upload` - Initiate file transfer, send manifest/metadata
+  - `/api/localsend/v2/upload` - Actual file upload (POST)
+  - `/api/localsend/v2/cancel` - Cancel session
 - **PIN/Confirmation:**  
   Optionally, a PIN or user confirmation is required before accepting files.
 
@@ -71,10 +71,10 @@ This document describes how to implement a **local network backup/restore** feat
 ### 3.2 API & Protocol
 
 - **Endpoints:**  
-  - `/api/namidasync/v1/register` — Register device
-  - `/api/namidasync/v1/prepare-upload` — Send manifest/metadata
-  - `/api/namidasync/v1/upload` — Upload backup zip/music folders
-  - `/api/namidasync/v1/cancel` — Cancel session
+  - `/api/namidasync/v1/register` - Register device
+  - `/api/namidasync/v1/prepare-upload` - Send manifest/metadata
+  - `/api/namidasync/v1/upload` - Upload backup zip/music folders
+  - `/api/namidasync/v1/cancel` - Cancel session
 - **Manifest:**  
   Use the same manifest structure as cloud backup for compatibility.
 
@@ -192,7 +192,7 @@ lib/
 ### **5. Cancel/Finish**
 - POST `/api/namidasync/v1/cancel`
 
-## 9. Migration Checklist for Namida Sync
+## 9. Implementation Checklist for Namida Sync
 
 - [ ] Add `LocalNetworkProvider` and `LocalNetworkService`.
 - [ ] Implement device discovery (UDP multicast + HTTP scan).

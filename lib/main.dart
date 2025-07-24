@@ -11,6 +11,7 @@ import 'services/services.dart';
 import 'utils/utils.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'dart:io';
+import 'providers/local_network_provider.dart';
 
 void main(List<String> args) async {
   // [1] Ensure Flutter bindings are initialized before any async operations.
@@ -80,6 +81,7 @@ class NamidaSyncApp extends StatelessWidget {
           update: (context, authProvider, previous) =>
               GoogleDriveProvider(GoogleDriveService(authProvider.authService)),
         ),
+        ChangeNotifierProvider(create: (_) => LocalNetworkProvider()),
       ],
 
       // [2] Listen to theme changes and configure MaterialApp accordingly.
