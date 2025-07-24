@@ -9,7 +9,9 @@
 This document explains how to implemente a robust, cross-app configuration passing from **Namida Intent Demo** (`com.example.namida_intent_demo`) to **Namida Sync** (`com.sanskar.namidasync`) on Android using Flutter platform channels and explicit Android intents.
 
 ### Motivation
-- **Goal:** Allow Namida Intent Demo to launch Namida Sync and pass configuration (backup folder and music folders) reliably, just like with `adb shell am start ... --es ...`.
+- **Goal:** 
+    - Allow Namida Intent Demo to launch Namida Sync and pass configuration (backup folder and music folders) reliably, just like with `adb shell am start ... --es ...`. 
+    - For example `   adb shell am start -n com.sanskar.namidasync/.MainActivity --es backupPath "/storage/emulated/0/Namida/Backups" --es musicFolders "/storage/emulated/0/Music,/storage/emulated/0/Downloads"`
 - **Why not just use plugins?**
   - Plugins like `android_intent_plus` and `intent` have limitations with Dart 3, null safety, or do not support explicit component launching as needed for robust cross-app communication.
   - Deep links (ACTION_VIEW + URI) can show "Open with" dialogs and are less reliable for direct app-to-app config passing.
