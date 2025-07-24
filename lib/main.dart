@@ -11,7 +11,6 @@ import 'screens/dashboard/dashboard_screen.dart';
 import 'dart:io';
 
 void main(List<String> args) async {
-    
   // [1] Ensure Flutter bindings are initialized before any async operations.
   WidgetsFlutterBinding.ensureInitialized();
   // debugPrint('[main] Flutter bindings initialized.');
@@ -20,11 +19,11 @@ void main(List<String> args) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // debugPrint('[main] Firebase initialized.');
 
-  // Global config for intent data
+  // [3] Global config for intent data
   String? globalBackupPath;
   List<String>? globalMusicFolders;
 
-  // Set up MethodChannel handler as early as possible
+  // [4] Set up MethodChannel handler as early as possible
   const platform = MethodChannel('com.sanskar.namidasync/intent');
   platform.setMethodCallHandler((call) async {
     if (call.method == 'onIntentReceived') {
@@ -37,12 +36,11 @@ void main(List<String> args) async {
       } else {
         globalMusicFolders = [];
       }
-      // Optionally: notify listeners or use a global key to update UI
     }
     return null;
   });
 
-  // Windows: Parse command-line arguments for config
+  // [5] On Windows, parse command-line arguments for config
   String? initialBackupPath;
   List<String>? initialMusicFolders;
   if (Platform.isWindows && args.isNotEmpty) {
@@ -56,10 +54,8 @@ void main(List<String> args) async {
     }
   }
 
-  runApp(NamidaSyncApp(
-    initialBackupPath: initialBackupPath,
-    initialMusicFolders: initialMusicFolders,
-  ),);
+  // [6] Run the app
+  runApp(NamidaSyncApp(initialBackupPath: initialBackupPath, initialMusicFolders: initialMusicFolders));
 }
 
 class NamidaSyncApp extends StatelessWidget {
@@ -69,7 +65,7 @@ class NamidaSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // [3] Set up all app-wide providers for folder, theme, Google auth, and Google Drive state management.
+    // [1] Set up all app-wide providers for folder, theme, Google auth, and Google Drive state management.
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FolderProvider()),
@@ -84,7 +80,7 @@ class NamidaSyncApp extends StatelessWidget {
         ),
       ],
 
-      // [4] Listen to theme changes and configure MaterialApp accordingly.
+      // [2] Listen to theme changes and configure MaterialApp accordingly.
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           // debugPrint('[NamidaSyncApp] Theme mode: ${themeProvider.themeMode}');
@@ -93,10 +89,7 @@ class NamidaSyncApp extends StatelessWidget {
             theme: AppTheme.getAppTheme(isLight: true),
             darkTheme: AppTheme.getAppTheme(isLight: false),
             themeMode: themeProvider.themeMode,
-            home: DashBoardScreen(
-              initialBackupPath: initialBackupPath,
-              initialMusicFolders: initialMusicFolders,
-            ),
+            home: DashBoardScreen(initialBackupPath: initialBackupPath, initialMusicFolders: initialMusicFolders),
             debugShowCheckedModeBanner: false,
           );
         },
