@@ -11,7 +11,7 @@ This document explains how to implemente a robust, cross-app configuration passi
 ### Motivation
 - **Goal:** 
     - Allow Namida Intent Demo to launch Namida Sync and pass configuration (backup folder and music folders) reliably, just like with `adb shell am start ... --es ...`. 
-    - For example `   adb shell am start -n com.sanskar.namidasync/.MainActivity --es backupPath "/storage/emulated/0/Namida/Backups" --es musicFolders "/storage/emulated/0/Music,/storage/emulated/0/Downloads"`
+    - For example, you can test it with `adb shell am start -n com.sanskar.namidasync/.MainActivity --es backupPath "/storage/emulated/0/Namida/Backups" --es musicFolders "/storage/emulated/0/Music,/storage/emulated/0/Downloads"`
 - **Why not just use plugins?**
   - Plugins like `android_intent_plus` and `intent` have limitations with Dart 3, null safety, or do not support explicit component launching as needed for robust cross-app communication.
   - Deep links (ACTION_VIEW + URI) can show "Open with" dialogs and are less reliable for direct app-to-app config passing.
@@ -121,11 +121,6 @@ val musicFoldersStr = intent.getStringExtra("musicFolders")
 - **Use logcat for debugging**: Native errors will show up here.
 - **Keep channel names consistent** between Dart and Kotlin.
 
-### References
-- [Flutter Platform Channels - Official Docs](https://docs.flutter.dev/platform-integration/platform-channels)
-- [Flutter Platform Channels Guide](https://decode.agency/article/flutter-platform-channels-guide/)
-- [Flutter Platform Channels](https://medium.com/codingmountain-blog/flutter-platform-channels-6e78c2fc75dc)
-
 ## Windows
 
 ### Overview
@@ -142,6 +137,7 @@ This section explains how to implement robust, user-friendly config passing from
 - The path is stored in `shared_preferences` for future launches.
 - When launching, Namida Intent Demo starts the EXE with `--backupPath` and `--musicFolders` as command-line arguments.
 - Namida Sync parses these arguments on startup and applies the config.
+- Test it with `"path\to\namida_sync.exe" --backupPath="C:\Path\To\Backups" --musicFolders="C:\Path\To\Music,C:\Path\To\Downloads"`
 
 #### **Key Benefits**
 - No registry or system-level setup required.
@@ -216,3 +212,8 @@ void main(List<String> args) {
 - **For development:**
   - Use the built EXE from `build/windows/runner/Release/namida_sync.exe`.
   - In debug mode, you can run the EXE with arguments from the command line.
+
+## References
+- [Flutter Platform Channels - Official Docs](https://docs.flutter.dev/platform-integration/platform-channels)
+- [Flutter Platform Channels Guide](https://decode.agency/article/flutter-platform-channels-guide/)
+- [Flutter Platform Channels](https://medium.com/codingmountain-blog/flutter-platform-channels-6e78c2fc75dc)
