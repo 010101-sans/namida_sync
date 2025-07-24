@@ -2,6 +2,63 @@
 
 This document describes how to build, version, package, and publish Namida Sync releases for Android and Windows, including best practices and troubleshooting tips.
 
+## 0. Branching & Versioning Strategy
+
+### Feature/Bugfix Branches
+- **Feature branches** are used to develop new features for the upcoming or a distant future release.
+- **Bugfix branches** are used to fix specific bugs.
+- **Naming convention:**
+  - Feature: `feature/short-description` (e.g., `feature/google-drive-integration`)
+  - Bugfix: `bugfix/short-description` (e.g., `bugfix/fix-windows-path-error`)
+- **Workflow:**
+  1. Create the branch from `beta` (or `main` if it’s a hotfix for stable):
+     ```sh
+     git checkout beta
+     git checkout -b feature/your-feature-name
+     # or for bugfix
+     git checkout -b bugfix/your-bugfix-name
+     ```
+  2. Work on your changes, commit, and push to GitHub.
+  3. Open a Pull Request (PR) to merge into `beta` (or `main` for hotfixes).
+  4. After review and testing, merge the PR.
+
+### Branches
+- **main**: Always contains stable, production-ready code. Only thoroughly tested features and bugfixes are merged here.
+- **beta**: Contains the latest features and changes that are not yet fully tested. Used for pre-release/beta testing.
+- **feature/bugfix branches**: For new features or bugfixes, create separate branches off `beta` (or `main` for hotfixes).
+
+### Version Naming (Semantic Versioning)
+
+- **Format:** `vMAJOR.MINOR.PATCH[-PRERELEASE]`
+  - **MAJOR**: Breaking changes (incompatible API changes)
+  - **MINOR**: New features, backward compatible
+  - **PATCH**: Bug fixes, backward compatible
+  - **PRERELEASE**: For beta/alpha/rc (release candidate) versions
+- **Examples:**
+  - `v1.0.0` — First stable release
+  - `v1.1.0` — New features added, backward compatible
+  - `v1.1.1` — Bugfixes only
+  - `v2.0.0` — Major changes, not backward compatible
+  - `v1.2.0-beta.1` — First beta of the upcoming 1.2.0 release
+- **How to use for your branches:**
+  - When you release from `main`, use `v1.2.0`, `v1.2.1`, etc.
+  - When you release from `beta`, use `v1.3.0-beta.1`, `v1.3.0-beta.2`, etc.
+
+#### Summary Table
+
+| Branch Type | Example Name                     | Purpose              | Merges Into |
+|-------------|----------------------------------|----------------------|-------------|
+| Feature     | feature/google-drive-integration | Add new features     | beta        |
+| Bugfix      | bugfix/fix-windows-path-error    | Fix bugs             | beta/main   |
+| Release     | main, beta                       | Stable/beta releases | —           |
+
+| Version Example | Meaning                          |
+|-----------------|----------------------------------|
+| v1.2.0          | Stable release, new features     |
+| v1.2.1          | Stable release, bugfix           |
+| v1.3.0-beta.1   | First beta of next minor release |
+| v2.0.0          | Major, breaking changes          |
+
 ## 1. Versioning & Preparation
 
 - Update the version in `pubspec.yaml` (e.g., `version: 1.0.0+1`).
@@ -102,6 +159,14 @@ git push origin v1.0.0
 - **Testing:** Test the release builds on real devices (Android and Windows) before publishing.
 
 ## References
+
 - [Flutter Build & Deployment Docs](https://docs.flutter.dev/deployment)
 - [Flutter Windows Build Docs](https://docs.flutter.dev/platform-integration/windows/building)
-- [How to Zip a Folder Using Terminal](https://themightymo.com/how-to-zip-a-folder-using-terminal-or-command-line/) 
+- [GitHub Docs](https://docs.github.com)
+- [GitHub Release Docs](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)
+- [GitHub Actions Docs](https://docs.github.com/en/actions)
+- [GitHub API Docs](https://docs.github.com/en/rest)
+
+# Release Process & Branching Strategy
+
+This document describes how to build, version, package, and publish Namida Sync releases for Android and Windows, including best practices, branching strategy, version naming, and troubleshooting tips.
