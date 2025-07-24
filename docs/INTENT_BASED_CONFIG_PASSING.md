@@ -1,7 +1,7 @@
 # Intent-Based Config Passing Between "Namida Intent Demo" and Namida Sync 
 
 - "Namida Intent Demo" will be adapted into Namida, and it is a demo application (android/windows) to show config passing from Namida to Namida Sync.
-- 
+- Namida Intent Demo Repo : https://github.com/010101-sans/namida_intent_demo
 
 ## Android
 
