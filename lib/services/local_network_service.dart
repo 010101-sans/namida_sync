@@ -192,10 +192,6 @@ class LocalNetworkService {
       _receiveBackupTriggered = false; // Reset flag for new transfer
       debugPrint('[LocalNetworkService] Received manifest: $manifestJson');
 
-      // Don't reset provider flags here - this would reset _incomingBackupPrompted
-      // and cause the dialog to appear twice during the same transfer session
-      // Provider flags should only be reset when starting a completely new transfer
-
       // Save manifest to file for restore process
       final manifestDir = '$tempRoot/Manifests';
       await Directory(manifestDir).create(recursive: true);
