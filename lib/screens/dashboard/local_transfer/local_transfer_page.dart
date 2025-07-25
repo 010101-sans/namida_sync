@@ -51,7 +51,9 @@ class _LocalTransferPageState extends State<LocalTransferPage> {
     return Column(
       children: const [
         LocalSetupCard(),
+        SizedBox(height: 16),
         LocalSendBackupCard(),
+        SizedBox(height: 16),
         LocalRecieveBackupCard(),
         SizedBox(height: 20),
       ],
