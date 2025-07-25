@@ -41,8 +41,11 @@ class GoogleDrivePage extends StatelessWidget {
               // [2.1] GoogleDriveBackupCard
               const GoogleDriveBackupCard(),
               // [2.2] GoogleDriveRestoreCard
-              GoogleDriveRestoreCard(onRestoreComplete: Provider.of<FolderProvider>(context, listen: false).refreshFolderList),
+              GoogleDriveRestoreCard(
+                onRestoreComplete: Provider.of<FolderProvider>(context, listen: false).refreshFolderList,
+              ),
             ],
+            const SizedBox(height: 20),
           ],
         );
       },

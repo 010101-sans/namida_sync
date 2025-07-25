@@ -88,7 +88,7 @@ class GoogleAccount extends StatelessWidget {
         IconButton(icon: const Icon(Iconsax.logout), color: primaryColor, tooltip: 'Sign out', onPressed: onSignOut),
       ],
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
