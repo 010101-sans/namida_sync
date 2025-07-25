@@ -7,6 +7,7 @@ import '../providers/local_network_provider.dart';
 import '../providers/folder_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/helper_methods.dart';
 
 /// Service for local network backup/restore: device discovery, server, and file transfer.
 class LocalNetworkService {
@@ -20,6 +21,7 @@ class LocalNetworkService {
   Map<String, dynamic>? _latestManifestJson;
   List<String> _receivedFilePaths = [];
   int _expectedFileCount = 0;
+  bool _receiveBackupTriggered = false;
   LocalNetworkProvider? provider;
 
   Directory? _backupDir;
@@ -36,6 +38,16 @@ class LocalNetworkService {
       await prefs.setString('deviceUuid', _deviceUuid!);
     }
     return _deviceUuid!;
+  }
+
+  String get tempRoot {
+    if (Platform.isWindows) {
+      return 'C:/NamidaSync';
+    } else if (Platform.isAndroid) {
+      return '/storage/emulated/0/NamidaSync';
+    } else {
+      return Directory.systemTemp.path + '/NamidaSync';
+    }
   }
 
   // Set backup and music directories from FolderProvider
@@ -111,6 +123,12 @@ class LocalNetworkService {
     debugPrint('[LocalNetworkService] Starting server with alias: $alias');
     // Ensure UUID is generated
     await deviceUuid;
+    
+    // Reset provider flags when starting a new server session
+    if (provider != null) {
+      provider!.reset();
+    }
+    
     _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
     _isServerRunning = true;
     debugPrint('[LocalNetworkService] HTTP server started on port $defaultPort');
@@ -142,6 +160,12 @@ class LocalNetworkService {
       await _httpServer!.close(force: true);
       _httpServer = null;
       _isServerRunning = false;
+      
+      // Reset provider flags when stopping the server
+      if (provider != null) {
+        provider!.reset();
+      }
+      
       debugPrint('[LocalNetworkService] HTTP server stopped');
     }
   }
@@ -165,7 +189,21 @@ class LocalNetworkService {
       _latestManifestJson = manifestJson;
       _receivedFilePaths = [];
       _expectedFileCount = (manifestJson['files'] as List).length;
+      _receiveBackupTriggered = false; // Reset flag for new transfer
       debugPrint('[LocalNetworkService] Received manifest: $manifestJson');
+
+      // Don't reset provider flags here - this would reset _incomingBackupPrompted
+      // and cause the dialog to appear twice during the same transfer session
+      // Provider flags should only be reset when starting a completely new transfer
+
+      // Save manifest to file for restore process
+      final manifestDir = '$tempRoot/Manifests';
+      await Directory(manifestDir).create(recursive: true);
+      final manifestPath = '$manifestDir/manifest.json';
+      final manifestFile = File(manifestPath);
+      await manifestFile.writeAsString(content);
+      // Don't add manifest to _receivedFilePaths since it's not part of the file count
+      debugPrint('[LocalNetworkService] Manifest saved to: $manifestPath');
 
       bool accepted = true;
       if (provider != null && provider!.onIncomingBackup != null) {
@@ -190,6 +228,27 @@ class LocalNetworkService {
           ..write('Ready for upload')
           ..close();
       } else {
+        // User declined the backup - clean up and reset state
+        debugPrint('[LocalNetworkService] User declined backup, cleaning up...');
+        
+        // Clean up manifest file
+        try {
+          final manifestPath = '$tempRoot/Manifests/manifest.json';
+          final manifestFile = File(manifestPath);
+          if (await manifestFile.exists()) {
+            await manifestFile.delete();
+            debugPrint('[LocalNetworkService] Deleted manifest file after user declined: $manifestPath');
+          }
+        } catch (e) {
+          debugPrint('[LocalNetworkService] Error deleting manifest file after decline: $e');
+        }
+        
+        // Reset service state
+        _latestManifestJson = null;
+        _receivedFilePaths.clear();
+        _expectedFileCount = 0;
+        _receiveBackupTriggered = false;
+        
         request.response
           ..statusCode = HttpStatus.forbidden
           ..write('Transfer declined by user')
@@ -208,19 +267,26 @@ class LocalNetworkService {
     try {
       final type = request.uri.queryParameters['type'];
       final relativePath = request.uri.queryParameters['relativePath'];
-      // Use actual backup/music folder paths from config, but save to temp/user dir using relativePath
-      final tempDir = Directory.systemTemp.path;
-      File saveFile;
+      final originalName = request.uri.queryParameters['name'];
+      // Use tempRoot and subfolders for storage
+      String savePath;
       if (type == 'backupZip') {
-        final backupDir = _backupDir?.path ?? tempDir;
+        final backupDir = '$tempRoot/Backups';
         await Directory(backupDir).create(recursive: true);
-        saveFile = File('$backupDir/backup.zip');
-        _receivedFilePaths.add(saveFile.path);
+        final fileName = originalName ?? 'backup.zip';
+        savePath = '$backupDir/$fileName';
+        _receivedFilePaths.add(normalizePath(savePath));
       } else if (type == 'music' && relativePath != null) {
-        final musicDir = _musicDir?.path ?? tempDir;
-        saveFile = File('$musicDir/$relativePath');
-        await saveFile.parent.create(recursive: true);
-        _receivedFilePaths.add(saveFile.path);
+        final folderLabel = request.uri.queryParameters['folderLabel'] ?? '';
+        final musicDir = tempRoot + '/MusicLibrary';
+        savePath = musicDir + '/' + folderLabel + (relativePath.isNotEmpty ? '/' + relativePath : '');
+        String parentDir = '';
+        final lastSlash = relativePath.lastIndexOf('/');
+        if (lastSlash != -1) {
+          parentDir = relativePath.substring(0, lastSlash);
+        }
+        await Directory(musicDir + '/' + folderLabel + (parentDir.isNotEmpty ? '/' + parentDir : '')).create(recursive: true);
+        _receivedFilePaths.add(normalizePath(savePath));
       } else {
         request.response
           ..statusCode = HttpStatus.badRequest
@@ -230,6 +296,7 @@ class LocalNetworkService {
       }
 
       // Save file data
+      final saveFile = File(savePath);
       final sink = saveFile.openWrite();
       await request.listen((data) {
         sink.add(data);
@@ -242,8 +309,10 @@ class LocalNetworkService {
         ..write('File received')
         ..close();
 
-      // Only trigger restore when all files in the manifest are received
-      if (_latestManifestJson != null && provider != null && _receivedFilePaths.length >= _expectedFileCount) {
+      // Only trigger receiveBackup when all files in the manifest are received
+      if (_latestManifestJson != null && provider != null && _receivedFilePaths.length >= _expectedFileCount && !_receiveBackupTriggered) {
+        _receiveBackupTriggered = true;
+        debugPrint('[LocalNetworkService] All files received, triggering receiveBackup');
         final manifest = TransferManifest(
           backupName: _latestManifestJson!['backupName'] ?? 'Unknown',
           files: (_latestManifestJson!['files'] as List)
@@ -256,6 +325,7 @@ class LocalNetworkService {
                   ))
               .toList(),
         );
+        // Trigger receiveBackup which will handle the restore process
         provider!.receiveBackup(
           manifest: manifest,
           filePaths: List<String>.from(_receivedFilePaths),
@@ -273,9 +343,25 @@ class LocalNetworkService {
   Future<void> _handleCancel(HttpRequest request) async {
     // Cancel the current session/transfer
     debugPrint('[LocalNetworkService] Cancelling current transfer/session');
+    
+    // Clean up manifest file if it exists
+    if (_latestManifestJson != null) {
+      try {
+        final manifestPath = '$tempRoot/Manifests/manifest.json';
+        final manifestFile = File(manifestPath);
+        if (await manifestFile.exists()) {
+          await manifestFile.delete();
+          debugPrint('[LocalNetworkService] Deleted manifest file: $manifestPath');
+        }
+      } catch (e) {
+        debugPrint('[LocalNetworkService] Error deleting manifest file: $e');
+      }
+    }
+    
     _latestManifestJson = null;
     _receivedFilePaths.clear();
     _expectedFileCount = 0;
+    _receiveBackupTriggered = false; // Reset flag
     provider?.reset();
     request.response
       ..statusCode = HttpStatus.ok
@@ -484,10 +570,14 @@ class LocalNetworkService {
     required String type, // 'backupZip' or 'music'
     String? relativePath, // required for music files
     void Function(double progress)? onProgress,
+    String? name, // original file name for backupZip
+    String? folderLabel, // top-level music folder name
   }) async {
     final queryParams = {
       'type': type,
       if (relativePath != null) 'relativePath': relativePath,
+      if (name != null) 'name': name,
+      if (folderLabel != null) 'folderLabel': folderLabel,
     };
     final url = Uri.http('${target.ip}:${target.port}', '/api/namidasync/v1/upload', queryParams);
     final client = HttpClient();

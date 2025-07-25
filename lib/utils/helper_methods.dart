@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../providers/providers.dart';
+import '../providers/providers.dart';
 import 'package:iconsax/iconsax.dart';
 
 // [1] Status label widget for file/folder upload/download status

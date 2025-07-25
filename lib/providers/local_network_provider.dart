@@ -4,6 +4,9 @@ import '../models/transfer_session.dart';
 import '../models/transfer_manifest.dart';
 import 'dart:io'; // Added for File
 import '../providers/folder_provider.dart';
+import '../utils/helper_methods.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert'; // Added for jsonDecode
 
 /// Provider for managing local network backup/restore state and actions.
 class LocalNetworkProvider extends ChangeNotifier {
@@ -21,6 +24,8 @@ class LocalNetworkProvider extends ChangeNotifier {
   String? ipAddress;
   int port = 53317;
   String? deviceUuid;
+  bool _restoreInProgress = false;
+  bool _incomingBackupPrompted = false;
 
   LocalNetworkProvider(this.networkService);
 
@@ -119,6 +124,7 @@ class LocalNetworkProvider extends ChangeNotifier {
           progress = 0.1 + 0.4 * p; // 10-50% for zip
           notifyListeners();
         },
+        name: backupZipFile.uri.pathSegments.last,
       );
       if (!okZip) {
         error = 'Failed to send backup zip.';
@@ -144,6 +150,7 @@ class LocalNetworkProvider extends ChangeNotifier {
             progress = 0.5 + 0.5 * ((i + p) / totalFiles); // 50-100% for music
             notifyListeners();
           },
+          folderLabel: entry.folderLabel,
         );
         if (!ok) {
           error = 'Failed to send music file: ${entry.path}';
@@ -162,15 +169,20 @@ class LocalNetworkProvider extends ChangeNotifier {
     }
   }
 
-  /// Callback for user confirmation before accepting a backup
+  // Callbacks for UI interaction
   Function(TransferManifest manifest)? onIncomingBackup;
-
-  /// Callback for prompting user to pick restore location.
-  Future<String?> Function(String folderLabel)? onPickRestoreLocation;
+  Future<void> Function()? onRestoreComplete;
 
   void setOnIncomingBackup(Function(TransferManifest manifest)? callback) {
     onIncomingBackup = callback;
   }
+
+  void setOnRestoreComplete(Future<void> Function()? callback) {
+    onRestoreComplete = callback;
+  }
+
+  /// Callback for prompting user to pick restore location.
+  Future<String?> Function(String folderLabel)? onPickRestoreLocation;
 
   void setOnPickRestoreLocation(Future<String?> Function(String folderLabel)? callback) {
     onPickRestoreLocation = callback;
@@ -178,91 +190,51 @@ class LocalNetworkProvider extends ChangeNotifier {
 
   /// Receive backup from another device.
   Future<void> receiveBackup({required TransferManifest manifest, required List<String> filePaths}) async {
-    // Prompt user for confirmation before accepting backup
-    if (onIncomingBackup != null) {
-      final accepted = await onIncomingBackup!(manifest);
-      if (accepted != true) {
-        error = 'User declined incoming backup.';
-        isReceiving = false;
-        notifyListeners();
-        return;
-      }
+    // Prevent duplicate processing
+    if (_restoreInProgress) {
+      debugPrint('[LocalNetworkProvider] Restore already in progress, skipping duplicate call');
+      return;
     }
-    isReceiving = true;
-    progress = 0.0;
-    error = null;
-    notifyListeners();
+    
+    // Set flag immediately to prevent duplicate calls
+    _restoreInProgress = true;
+    
     try {
+      // The dialog is already shown in _handlePrepareUpload, so we don't need to show it again here
+      // Just proceed with the restore process
+      debugPrint('[LocalNetworkProvider] Processing received backup: ${manifest.backupName}');
+      
+      isReceiving = true;
+      progress = 0.0;
+      error = null;
+      notifyListeners();
+      
       debugPrint('[LocalNetworkProvider] Receiving manifest: \nBackup: \n\tName: ${manifest.backupName}');
       for (final file in manifest.files) {
         debugPrint(
           '[LocalNetworkProvider] File: ${file.name} (size: ${file.size}), folderLabel: ${file.folderLabel}, relativePath: ${file.relativePath}',
         );
       }
-      // Restore music files
-      int restored = 0;
-      final total = manifest.files.where((f) => f.folderLabel.isNotEmpty).length;
-      for (final file in manifest.files.where((f) => f.folderLabel.isNotEmpty)) {
-        String? restoreRoot;
-        // Try to find matching music library folder
-        if (folderProvider != null) {
-          String? foundPath;
-          for (final f in folderProvider!.musicFolders) {
-            if (f.name == file.folderLabel) {
-              foundPath = f.path;
-              break;
-            }
-          }
-          if (foundPath != null) {
-            restoreRoot = foundPath;
-            debugPrint('[LocalNetworkProvider] Restoring to existing music library folder: $restoreRoot');
-          }
-        }
-        // If not found, prompt user for restore location
-        if (restoreRoot == null) {
-          if (onPickRestoreLocation != null) {
-            restoreRoot = await onPickRestoreLocation!(file.folderLabel);
-            if (restoreRoot == null) {
-              error = 'User cancelled restore location selection.';
-              isReceiving = false;
-              notifyListeners();
-              return;
-            }
-            debugPrint('[LocalNetworkProvider] User picked restore location: $restoreRoot');
-          } else {
-            restoreRoot = '/tmp/restore/${file.folderLabel}';
-            debugPrint('[LocalNetworkProvider] Defaulting restore location to: $restoreRoot');
-          }
-        }
-        final restorePath = '$restoreRoot/${file.relativePath}';
-        final srcFilePath = filePaths.firstWhere(
-          (p) => p.endsWith('/${file.relativePath}') || p.endsWith('\\${file.relativePath}'),
-          orElse: () => '',
-        );
-        if (srcFilePath.isEmpty) {
-          debugPrint('[LocalNetworkProvider] Could not find received file for: ${file.relativePath}');
-          continue;
-        }
-        final srcFile = File(srcFilePath);
-        final destFile = File(restorePath);
-        await destFile.parent.create(recursive: true);
-        // Skip if file already exists (duplicate)
-        if (await destFile.exists()) {
-          debugPrint('[LocalNetworkProvider] Skipping duplicate file: $restorePath');
-          continue;
-        }
-        await srcFile.copy(destFile.path);
-        debugPrint('[LocalNetworkProvider] Restored file to: $restorePath');
-        restored++;
-        progress = restored / total;
-        notifyListeners();
-      }
+      
+      // Files are already saved to temp by the service, just update progress
       progress = 1.0;
       isReceiving = false;
       notifyListeners();
+      
+      debugPrint('[LocalNetworkProvider] All files received, starting restore process...');
+      
+      // Trigger the restore process if we have a context
+      if (onRestoreComplete != null) {
+        await onRestoreComplete!();
+      }
+      
     } catch (e) {
       error = 'Error during receive: $e';
       isReceiving = false;
+      debugPrint('[LocalNetworkProvider] Error in receiveBackup: $e');
+    } finally {
+      // Reset flag only after everything is complete
+      _restoreInProgress = false;
       notifyListeners();
     }
   }
@@ -274,6 +246,8 @@ class LocalNetworkProvider extends ChangeNotifier {
     isSending = false;
     isReceiving = false;
     currentSession = null;
+    _restoreInProgress = false;
+    _incomingBackupPrompted = false;
     notifyListeners();
   }
 
@@ -322,6 +296,170 @@ class LocalNetworkProvider extends ChangeNotifier {
       debugPrint('[LocalNetworkProvider] Error discovering devices: $e');
     }
     isDiscovering = false;
+    notifyListeners();
+  }
+
+  Future<void> restoreFromTempReceivedFiles(BuildContext context) async {
+    debugPrint('[LocalNetworkProvider] Starting restoreFromTempReceivedFiles');
+    
+    if (folderProvider == null) {
+      error = 'Folder provider not available.';
+      notifyListeners();
+      return;
+    }
+
+    final tempRoot = networkService.tempRoot;
+    final manifestPath = tempRoot + '/Manifests/manifest.json';
+    final manifestFile = File(manifestPath);
+    
+    if (!await manifestFile.exists()) {
+      error = 'No received manifest found.';
+      debugPrint('[LocalNetworkProvider] Manifest file not found at: $manifestPath');
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final manifestJson = await manifestFile.readAsString();
+      final manifest = TransferManifest.fromJson(jsonDecode(manifestJson));
+      
+      debugPrint('[LocalNetworkProvider] Starting restore from manifest: ${manifest.backupName}');
+      
+      // 1. Restore backup zip to the configured backup folder
+      final backupZipPath = tempRoot + '/Backups/${manifest.backupName}';
+      final backupZipFile = File(backupZipPath);
+      
+      if (await backupZipFile.exists()) {
+        final backupFolder = folderProvider!.backupFolder?.path;
+        if (backupFolder != null && backupFolder.isNotEmpty) {
+          final destZipPath = normalizePath(backupFolder + '/' + manifest.backupName);
+          final destZipFile = File(destZipPath);
+          
+          if (!await destZipFile.exists()) {
+            await backupZipFile.copy(destZipPath);
+            debugPrint('[LocalNetworkProvider] Backup zip restored to: $destZipPath');
+          } else {
+            debugPrint('[LocalNetworkProvider] Backup zip already exists, skipping: $destZipPath');
+          }
+        } else {
+          debugPrint('[LocalNetworkProvider] No backup folder configured, skipping backup zip restore');
+        }
+      } else {
+        debugPrint('[LocalNetworkProvider] Backup zip not found in temp: $backupZipPath');
+      }
+
+      // 2. Restore music folders
+      final musicEntries = manifest.files.where((f) => f.folderLabel.isNotEmpty).toList();
+      final uniqueFolders = <String>{};
+      
+      debugPrint('[LocalNetworkProvider] Processing ${musicEntries.length} music files in ${musicEntries.map((e) => e.folderLabel).toSet().length} unique folders');
+      
+      // Group by folderLabel to handle each folder once
+      for (final entry in musicEntries) {
+        if (uniqueFolders.contains(entry.folderLabel)) continue;
+        uniqueFolders.add(entry.folderLabel);
+        
+        debugPrint('[LocalNetworkProvider] Processing folder: ${entry.folderLabel}');
+        
+        // Check if a folder with the same name exists in music library
+        final existingFolder = folderProvider!.musicFolders
+            .where((f) => f.name == entry.folderLabel)
+            .firstOrNull;
+        
+        String? chosenPath;
+        
+        if (existingFolder != null) {
+          // Folder exists in music library - use existing path
+          chosenPath = existingFolder.path;
+          debugPrint('[LocalNetworkProvider] Using existing folder path for "${entry.folderLabel}": $chosenPath');
+        } else {
+          // Folder doesn't exist - prompt user for choice
+          debugPrint('[LocalNetworkProvider] Prompting user for folder "${entry.folderLabel}" restore location');
+          chosenPath = await showDialog<String>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              title: Text('Restore "${entry.folderLabel}"'),
+              content: Text('This folder is not in your music library. How would you like to restore it?'),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    // Option 1: Pick an existing location on device
+                    final picked = await FilePicker.platform.getDirectoryPath(
+                      dialogTitle: 'Pick location for ${entry.folderLabel}',
+                    );
+                    Navigator.of(ctx).pop(picked);
+                  },
+                  child: const Text('Pick Existing Location'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    // Option 2: Pick parent folder for new subfolder
+                    final parent = await FilePicker.platform.getDirectoryPath(
+                      dialogTitle: 'Select parent folder for ${entry.folderLabel}',
+                    );
+                    if (parent != null && parent.isNotEmpty) {
+                      Navigator.of(ctx).pop(normalizePath(parent + '/' + entry.folderLabel));
+                    } else {
+                      Navigator.of(ctx).pop(null);
+                    }
+                  },
+                  child: const Text('Pick Parent Folder'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(null),
+                  child: const Text('Skip'),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        if (chosenPath == null || chosenPath.isEmpty) {
+          debugPrint('[LocalNetworkProvider] Skipping folder "${entry.folderLabel}" - no path chosen');
+          continue;
+        }
+        
+        // Copy all files for this folder
+        final folderEntries = musicEntries.where((e) => e.folderLabel == entry.folderLabel).toList();
+        debugPrint('[LocalNetworkProvider] Copying ${folderEntries.length} files for folder "${entry.folderLabel}"');
+        
+        for (final fileEntry in folderEntries) {
+          final tempFilePath = normalizePath(tempRoot + '/MusicLibrary/' + entry.folderLabel + '/' + fileEntry.relativePath);
+          final tempFile = File(tempFilePath);
+          
+          if (await tempFile.exists()) {
+            final destFilePath = normalizePath(chosenPath + '/' + fileEntry.relativePath);
+            final destFile = File(destFilePath);
+            
+            // Create parent directories
+            await destFile.parent.create(recursive: true);
+            
+            if (!await destFile.exists()) {
+              await tempFile.copy(destFilePath);
+              debugPrint('[LocalNetworkProvider] Restored: ${fileEntry.name} to $destFilePath');
+            } else {
+              debugPrint('[LocalNetworkProvider] File already exists, skipping: $destFilePath');
+            }
+          } else {
+            debugPrint('[LocalNetworkProvider] Temp file not found: $tempFilePath');
+          }
+        }
+        
+        // Add to music library if it's a new folder
+        if (existingFolder == null) {
+          await folderProvider!.addMusicFolder(chosenPath);
+          debugPrint('[LocalNetworkProvider] Added new folder to music library: $chosenPath');
+        }
+      }
+      
+      debugPrint('[LocalNetworkProvider] Restore completed successfully');
+      
+    } catch (e) {
+      error = 'Error during restore: $e';
+      debugPrint('[LocalNetworkProvider] Restore error: $e');
+    }
+    
     notifyListeners();
   }
 }

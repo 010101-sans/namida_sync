@@ -14,45 +14,47 @@ class LocalTransferPage extends StatefulWidget {
 }
 
 class _LocalTransferPageState extends State<LocalTransferPage> {
+  bool _callbacksSet = false;
+
   @override
   void initState() {
     super.initState();
     // Delay to ensure context is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<LocalNetworkProvider>(context, listen: false);
-      provider.setOnIncomingBackup((manifest) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Incoming Backup'),
-            content: Text('Accept backup from ${manifest.backupName}?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Decline')),
-              ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Accept')),
-            ],
-          ),
-        ) ?? false;
-      });
+      if (!_callbacksSet) {
+        final provider = Provider.of<LocalNetworkProvider>(context, listen: false);
+        provider.setOnIncomingBackup((manifest) async {
+          return await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Incoming Backup'),
+              content: Text('Accept backup from ${manifest.backupName}?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Decline')),
+                ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Accept')),
+              ],
+            ),
+          ) ?? false;
+        });
+        
+        provider.setOnRestoreComplete(() async {
+          await provider.restoreFromTempReceivedFiles(context);
+        });
+        
+        _callbacksSet = true;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final localNetworkService = LocalNetworkService();
-    return ChangeNotifierProvider<LocalNetworkProvider>(
-      create: (_) {
-        final provider = LocalNetworkProvider(localNetworkService);
-        localNetworkService.setProvider(provider); // Wire provider to service
-        return provider;
-      },
-      child: Column(
-        children: const [
-          LocalSetupCard(),
-          LocalSendBackupCard(),
-          LocalRecieveBackupCard(),
-          SizedBox(height: 20),
-        ],
-      ),
+    return Column(
+      children: const [
+        LocalSetupCard(),
+        LocalSendBackupCard(),
+        LocalRecieveBackupCard(),
+        SizedBox(height: 20),
+      ],
     );
   }
 }

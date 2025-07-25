@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
-import '../services/services.dart';
+import '../services/folder_service.dart';
+import '../utils/helper_methods.dart';
 
 // [1] Model for representing a music folder's path, status, and loading state.
 class MusicFolderInfo {
@@ -66,8 +68,9 @@ class FolderProvider extends ChangeNotifier {
     isLoading = true;
     // debugPrint('[FolderProvider] Setting backup folder: $path');
     notifyListeners();
-    backupFolder = FolderInfo(path: path, type: FolderType.backup);
-    await FolderService.saveBackupFolder(path);
+    final normalizedPath = normalizePath(path);
+    backupFolder = FolderInfo(path: normalizedPath, type: FolderType.backup);
+    await FolderService.saveBackupFolder(normalizedPath);
     await validateAll();
     isLoading = false;
     // debugPrint('[FolderProvider] Backup folder set and validated.');
@@ -77,13 +80,14 @@ class FolderProvider extends ChangeNotifier {
   // [6] Adds a music folder and persists the list.
   Future<void> addMusicFolder(String path) async {
     // debugPrint('[FolderProvider] Adding music folder: $path');
-    musicFolders.add(MusicFolderInfo(path: path, isLoading: true));
+    final normalizedPath = normalizePath(path);
+    musicFolders.add(MusicFolderInfo(path: normalizedPath, isLoading: true));
     notifyListeners();
     final idx = musicFolders.length - 1;
     await FolderService.saveMusicFolders(musicFolders.map((f) => f.path).toList());
     await validateMusicFolder(idx);
     musicFolders[idx] = musicFolders[idx].copyWith(isLoading: false);
-    // debugPrint('[FolderProvider] Music folder added and validated: $path');
+    // debugPrint('[FolderProvider] Music folder added and validated: $normalizedPath');
     notifyListeners();
   }
 
@@ -91,9 +95,10 @@ class FolderProvider extends ChangeNotifier {
   Future<void> updateMusicFolder(int index, String newPath) async {
     if (index >= 0 && index < musicFolders.length) {
       // debugPrint('[FolderProvider] Updating music folder at index $index to new path: $newPath');
+      final normalizedPath = normalizePath(newPath);
       musicFolders[index] = musicFolders[index].copyWith(isLoading: true);
       notifyListeners();
-      musicFolders[index] = MusicFolderInfo(path: newPath, isLoading: true);
+      musicFolders[index] = MusicFolderInfo(path: normalizedPath, isLoading: true);
       await FolderService.saveMusicFolders(musicFolders.map((f) => f.path).toList());
       await validateMusicFolder(index);
       musicFolders[index] = musicFolders[index].copyWith(isLoading: false);
@@ -129,8 +134,9 @@ class FolderProvider extends ChangeNotifier {
   Future<void> setMusicFolders(List<String> paths) async {
     isLoading = true;
     notifyListeners();
-    musicFolders = paths.map((p) => MusicFolderInfo(path: p, isLoading: true)).toList();
-    await FolderService.saveMusicFolders(paths);
+    final normalizedPaths = paths.map((p) => normalizePath(p)).toList();
+    musicFolders = normalizedPaths.map((p) => MusicFolderInfo(path: p, isLoading: true)).toList();
+    await FolderService.saveMusicFolders(normalizedPaths);
     await validateAll();
     isLoading = false;
     notifyListeners();

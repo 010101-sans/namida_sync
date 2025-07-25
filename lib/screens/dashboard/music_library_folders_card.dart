@@ -125,17 +125,18 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                             // [1.4.1.2.2] Folder Path (Platform-specific formatting)
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                final path = Platform.isAndroid
-                                    ? folderProvider.musicFolders[i].path.replaceFirst(
-                                        '/storage/emulated/0/',
+                                final normalizedPath = normalizePath(folderProvider.musicFolders[i].path);
+                                final displayPath = Platform.isAndroid
+                                    ? normalizedPath.replaceFirst(
+                                        'internal memory/',
                                         'Internal Memory/',
                                       )
-                                    : folderProvider.musicFolders[i].path;
+                                    : normalizedPath;
                                 return FittedBox(
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    path,
+                                    displayPath,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: colorScheme.onSurface.withValues(alpha: 0.7),
                                       fontSize: 12,
