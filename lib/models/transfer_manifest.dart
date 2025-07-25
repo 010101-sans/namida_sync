@@ -7,6 +7,15 @@ class TransferManifest {
     required this.backupName,
     required this.files,
   });
+
+  factory TransferManifest.fromJson(Map<String, dynamic> json) {
+    return TransferManifest(
+      backupName: json['backupName'] as String,
+      files: (json['files'] as List)
+          .map((f) => TransferFileEntry.fromJson(f as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }
 
 class TransferFileEntry {
@@ -24,4 +33,14 @@ class TransferFileEntry {
     required this.folderLabel,
     required this.relativePath,
   });
+
+  static TransferFileEntry fromJson(Map<String, dynamic> json) {
+    return TransferFileEntry(
+      name: json['name'] as String,
+      path: json['path'] as String,
+      size: json['size'] as int,
+      folderLabel: json['folderLabel'] as String,
+      relativePath: json['relativePath'] as String,
+    );
+  }
 } 

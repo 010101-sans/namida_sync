@@ -15,6 +15,8 @@ import 'google_drive/google_drive_page.dart';
 import '../../providers/providers.dart';
 import '../../utils/utils.dart';
 import '../../widgets/widgets.dart';
+import '../../providers/local_network_provider.dart';
+import '../../services/local_network_service.dart';
 
 class DashBoardScreen extends StatefulWidget {
   final String? initialBackupPath;
@@ -394,7 +396,22 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
               },
               children: [
                 // [5.1] Local Transfer Page
-                LocalTransferPage(),
+                ChangeNotifierProvider<LocalNetworkProvider>(
+                  create: (_) {
+                    final service = LocalNetworkService();
+                    final provider = LocalNetworkProvider(service);
+                    service.setProvider(provider);
+                    return provider;
+                  },
+                  child: Consumer<FolderProvider>(
+                    builder: (context, folderProvider, _) {
+                      // Wire the folder provider to the network provider
+                      final networkProvider = Provider.of<LocalNetworkProvider>(context, listen: false);
+                      networkProvider.setFolderProvider(folderProvider);
+                      return LocalTransferPage();
+                    },
+                  ),
+                ),
                 // [5.2] Google Drive Page
                 GoogleDrivePage(),
               ],
@@ -503,7 +520,22 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                 },
                 children: [
                   // [2.1] Local Transfer Page
-                  LocalTransferPage(),
+                  ChangeNotifierProvider<LocalNetworkProvider>(
+                    create: (_) {
+                      final service = LocalNetworkService();
+                      final provider = LocalNetworkProvider(service);
+                      service.setProvider(provider);
+                      return provider;
+                    },
+                    child: Consumer<FolderProvider>(
+                      builder: (context, folderProvider, _) {
+                        // Wire the folder provider to the network provider
+                        final networkProvider = Provider.of<LocalNetworkProvider>(context, listen: false);
+                        networkProvider.setFolderProvider(folderProvider);
+                        return LocalTransferPage();
+                      },
+                    ),
+                  ),
                   // [2.2] Google Drive Page
                   GoogleDrivePage(),
                 ],
