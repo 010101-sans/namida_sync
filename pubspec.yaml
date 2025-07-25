@@ -40,7 +40,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   provider: ^6.0.5
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.5.3
   permission_handler: ^11.3.1
   file_picker: ^10.0.2
   googleapis:
@@ -58,6 +58,7 @@ dependencies:
   udp: ^5.0.3
   expandable_page_view:
   multicast_dns: ^0.3.0
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:

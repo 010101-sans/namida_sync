@@ -70,6 +70,15 @@ class LocalRecieveBackupCard extends StatelessWidget {
                   Text('Receiving backup...', style: Theme.of(context).textTheme.bodyMedium),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(value: provider.progress),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: Icon(Iconsax.close_circle),
+                    label: Text('Cancel Transfer'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    onPressed: () async {
+                      await provider.cancelTransfer();
+                    },
+                  ),
                 ],
                 if (provider.error != null)
                   Padding(
