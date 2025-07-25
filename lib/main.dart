@@ -81,7 +81,6 @@ class NamidaSyncApp extends StatelessWidget {
           update: (context, authProvider, previous) =>
               GoogleDriveProvider(GoogleDriveService(authProvider.authService)),
         ),
-        ChangeNotifierProvider(create: (_) => LocalNetworkProvider()),
       ],
 
       // [2] Listen to theme changes and configure MaterialApp accordingly.
