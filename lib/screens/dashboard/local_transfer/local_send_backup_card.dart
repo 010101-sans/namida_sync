@@ -8,14 +8,12 @@ import 'dart:io';
 
 class LocalSendBackupCard extends StatefulWidget {
   const LocalSendBackupCard({super.key});
-
   @override
   State<LocalSendBackupCard> createState() => _LocalSendBackupCardState();
 }
 
 class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
   String? selectedDevice;
-
   @override
   Widget build(BuildContext context) {
     return Consumer2<LocalNetworkProvider, FolderProvider>(

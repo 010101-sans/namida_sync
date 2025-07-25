@@ -43,7 +43,7 @@ class BackupItem {
   );
 }
 
-/// Represents a local network transfer session (to be expanded).
+// Represents a local network transfer session (to be expanded).
 class LocalNetworkSession {
   final Map<String, dynamic> manifest;
   final List<BackupItem> files;

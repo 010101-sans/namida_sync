@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import '../models/transfer_manifest.dart';
 import '../providers/local_network_provider.dart';
 import '../providers/folder_provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for local network backup/restore: device discovery, server, and file transfer.
 class LocalNetworkService {
@@ -22,6 +24,19 @@ class LocalNetworkService {
 
   Directory? _backupDir;
   Directory? _musicDir;
+
+  String? _deviceUuid;
+
+  Future<String> get deviceUuid async {
+    if (_deviceUuid != null) return _deviceUuid!;
+    final prefs = await SharedPreferences.getInstance();
+    _deviceUuid = prefs.getString('deviceUuid');
+    if (_deviceUuid == null) {
+      _deviceUuid = const Uuid().v4();
+      await prefs.setString('deviceUuid', _deviceUuid!);
+    }
+    return _deviceUuid!;
+  }
 
   // Set backup and music directories from FolderProvider
   void setDirsFromFolderProvider(FolderProvider folderProvider) {
@@ -94,6 +109,8 @@ class LocalNetworkService {
     if (_isServerRunning) return;
     _alias = alias;
     debugPrint('[LocalNetworkService] Starting server with alias: $alias');
+    // Ensure UUID is generated
+    await deviceUuid;
     _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
     _isServerRunning = true;
     debugPrint('[LocalNetworkService] HTTP server started on port $defaultPort');
@@ -133,10 +150,11 @@ class LocalNetworkService {
 
   String _alias = '';
   Future<void> _handleRegister(HttpRequest request) async {
-    // Respond with alias for HTTP scan
+    // Respond with alias and uuid for HTTP scan
+    final uuid = await deviceUuid;
     request.response
       ..statusCode = HttpStatus.ok
-      ..write(_alias)
+      ..write(jsonEncode({'alias': _alias, 'uuid': uuid}))
       ..close();
   }
 
@@ -147,16 +165,36 @@ class LocalNetworkService {
       _latestManifestJson = manifestJson;
       _receivedFilePaths = [];
       _expectedFileCount = (manifestJson['files'] as List).length;
-      // Optionally: validate manifestJson structure here
-
-      // TODO: Integrate with provider to prompt user for confirmation
       debugPrint('[LocalNetworkService] Received manifest: $manifestJson');
 
-      // For now, always accept
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('Ready for upload')
-        ..close();
+      bool accepted = true;
+      if (provider != null && provider!.onIncomingBackup != null) {
+        final manifest = TransferManifest(
+          backupName: manifestJson['backupName'] ?? 'Unknown',
+          files: (manifestJson['files'] as List)
+              .map((f) => TransferFileEntry(
+                    name: f['name'],
+                    path: '',
+                    size: f['size'],
+                    folderLabel: f['folderLabel'] ?? '',
+                    relativePath: f['relativePath'] ?? '',
+                  ))
+              .toList(),
+        );
+        accepted = await provider!.onIncomingBackup!(manifest) == true;
+      }
+
+      if (accepted) {
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Ready for upload')
+          ..close();
+      } else {
+        request.response
+          ..statusCode = HttpStatus.forbidden
+          ..write('Transfer declined by user')
+          ..close();
+      }
     } catch (e) {
       debugPrint('[LocalNetworkService] Error parsing manifest: $e');
       request.response
@@ -170,18 +208,17 @@ class LocalNetworkService {
     try {
       final type = request.uri.queryParameters['type'];
       final relativePath = request.uri.queryParameters['relativePath'];
-      // Use actual backup/music folder paths from config
-      final backupDir = _backupDir ?? Directory('/tmp/namida_backup');
-      final musicDir = _musicDir ?? Directory('/tmp/namida_music');
-
-      // Determine save location
+      // Use actual backup/music folder paths from config, but save to temp/user dir using relativePath
+      final tempDir = Directory.systemTemp.path;
       File saveFile;
       if (type == 'backupZip') {
-        await backupDir.create(recursive: true);
-        saveFile = File('${backupDir.path}/backup.zip');
+        final backupDir = _backupDir?.path ?? tempDir;
+        await Directory(backupDir).create(recursive: true);
+        saveFile = File('$backupDir/backup.zip');
         _receivedFilePaths.add(saveFile.path);
       } else if (type == 'music' && relativePath != null) {
-        saveFile = File('${musicDir.path}/$relativePath');
+        final musicDir = _musicDir?.path ?? tempDir;
+        saveFile = File('$musicDir/$relativePath');
         await saveFile.parent.create(recursive: true);
         _receivedFilePaths.add(saveFile.path);
       } else {
@@ -212,10 +249,10 @@ class LocalNetworkService {
           files: (_latestManifestJson!['files'] as List)
               .map((f) => TransferFileEntry(
                     name: f['name'],
-                    path: f['path'],
+                    path: '', // Do not use sender-local path
                     size: f['size'],
-                    folderLabel: f['folderLabel'],
-                    relativePath: f['relativePath'],
+                    folderLabel: f['folderLabel'] ?? '',
+                    relativePath: f['relativePath'] ?? '',
                   ))
               .toList(),
         );
@@ -234,7 +271,12 @@ class LocalNetworkService {
   }
 
   Future<void> _handleCancel(HttpRequest request) async {
-    // TODO: Cancel the current session/transfer
+    // Cancel the current session/transfer
+    debugPrint('[LocalNetworkService] Cancelling current transfer/session');
+    _latestManifestJson = null;
+    _receivedFilePaths.clear();
+    _expectedFileCount = 0;
+    provider?.reset();
     request.response
       ..statusCode = HttpStatus.ok
       ..write('Cancelled')
@@ -244,9 +286,11 @@ class LocalNetworkService {
   /// Send a UDP multicast hello packet to announce this device.
   Future<void> sendHello({required String alias, int? port}) async {
     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+    final uuid = await deviceUuid;
     final helloMsg = jsonEncode({
       'alias': alias,
       'port': port ?? defaultPort,
+      'uuid': uuid,
     });
     debugPrint('[LocalNetworkService] Sending hello packet to $multicastAddress:$defaultPort');
     socket.send(utf8.encode(helloMsg), InternetAddress(multicastAddress), defaultPort);
@@ -283,6 +327,7 @@ class LocalNetworkService {
                 alias: data['alias'] ?? 'Unknown',
                 ip: ip,
                 port: data['port'] ?? defaultPort,
+                uuid: data['uuid'] ?? '',
               ));
             }
           } catch (e) {
@@ -312,8 +357,13 @@ class LocalNetworkService {
           .then((resp) async {
             if (resp.statusCode == 200) {
               final body = await resp.transform(utf8.decoder).join();
-              debugPrint('[LocalNetworkService] HTTP scan found device at $ip: $body');
-              devices.add(DiscoveredDevice(alias: body, ip: ip, port: defaultPort));
+              try {
+                final data = jsonDecode(body);
+                debugPrint('[LocalNetworkService] HTTP scan found device at $ip: $data');
+                devices.add(DiscoveredDevice(alias: data['alias'] ?? 'Unknown', ip: ip, port: defaultPort, uuid: data['uuid'] ?? ''));
+              } catch (e) {
+                debugPrint('[LocalNetworkService] Error decoding HTTP scan response: $e');
+              }
             }
           })
           .catchError((_) {}));
@@ -350,7 +400,47 @@ class LocalNetworkService {
     required List<File> files,
     void Function(double progress)? onProgress,
   }) async {
-    // TODO: Implement sending manifest and files via HTTP(S) POST
+    // Send manifest
+    final manifestJson = jsonDecode(await manifest.readAsString());
+    final manifestOk = await sendManifest(target: target, manifestJson: manifestJson);
+    if (!manifestOk) {
+      debugPrint('[LocalNetworkService] Target declined manifest or failed.');
+      onProgress?.call(0);
+      return;
+    }
+    // Send backup zip (first file)
+    if (files.isNotEmpty) {
+      final zipFile = files.first;
+      final okZip = await sendFile(
+        target: target,
+        file: zipFile,
+        type: 'backupZip',
+        onProgress: (p) => onProgress?.call(0.1 + 0.4 * p),
+      );
+      if (!okZip) {
+        debugPrint('[LocalNetworkService] Failed to send backup zip.');
+        onProgress?.call(0.1);
+        return;
+      }
+    }
+    // Send music files (rest)
+    final musicFiles = files.length > 1 ? files.sublist(1) : [];
+    final totalMusic = musicFiles.length;
+    for (int i = 0; i < totalMusic; i++) {
+      final file = musicFiles[i];
+      final ok = await sendFile(
+        target: target,
+        file: file,
+        type: 'music',
+        onProgress: (p) => onProgress?.call(0.5 + 0.5 * ((i + p) / totalMusic)),
+      );
+      if (!ok) {
+        debugPrint('[LocalNetworkService] Failed to send music file: ${file.path}');
+        onProgress?.call(0.5 + 0.5 * (i / totalMusic));
+        return;
+      }
+    }
+    onProgress?.call(1.0);
   }
 
   /// Handle receiving a backup (called by server endpoints).
@@ -359,7 +449,10 @@ class LocalNetworkService {
     required List<File> files,
     void Function(double progress)? onProgress,
   }) async {
-    // TODO: Implement receiving and saving files
+    // Receiving and saving files is handled by the server endpoints (_handleUpload, etc.)
+    // This method can be used for additional post-processing if needed.
+    debugPrint('[LocalNetworkService] receiveBackup called (stub).');
+    onProgress?.call(1.0);
   }
 
   /// Send the manifest to the target device.
@@ -421,6 +514,21 @@ class LocalNetworkService {
       client.close();
     }
   }
+
+  /// Request cancellation of the current transfer/session on this device.
+  Future<void> requestCancel() async {
+    try {
+      final url = Uri.http('127.0.0.1:$defaultPort', '/api/namidasync/v1/cancel');
+      final client = HttpClient();
+      final request = await client.postUrl(url);
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      debugPrint('[LocalNetworkService] Cancel response: ${response.statusCode} $responseBody');
+      client.close();
+    } catch (e) {
+      debugPrint('[LocalNetworkService] Error sending cancel request: $e');
+    }
+  }
 }
 
 /// Model for a discovered device on the network.
@@ -428,7 +536,8 @@ class DiscoveredDevice {
   final String alias;
   final String ip;
   final int port;
+  final String uuid;
   // Add more fields as needed (e.g., device type, OS)
 
-  DiscoveredDevice({required this.alias, required this.ip, required this.port});
+  DiscoveredDevice({required this.alias, required this.ip, required this.port, required this.uuid});
 }
