@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../utils/utils.dart';
 import '../../widgets/custom_card.dart';
 import '../../utils/ui_constants.dart';
 
@@ -148,31 +150,31 @@ class MusicLibraryFoldersCard extends StatelessWidget {
 
                             // [1.4.1.2.3] (Optional) Invalid Folder Warning
                             // Uncomment and implement if folder status checking is enabled.
-                            // if (folderProvider.musicFolders[i].status == FolderStatus.invalid)
-                            //   Container(
-                            //     margin: const EdgeInsets.only(top: 8),
-                            //     padding: const EdgeInsets.all(8),
-                            //     decoration: BoxDecoration(
-                            //       color: AppColors.errorRed.withValues(alpha: 0.1),
-                            //       borderRadius: BorderRadius.circular(6),
-                            //       border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.3), width: 1),
-                            //     ),
-                            //     child: Row(
-                            //       children: [
-                            //         Icon(Icons.error_outline_rounded, size: 16, color: AppColors.errorRed),
-                            //         const SizedBox(width: 8),
-                            //         Text(
-                            //           'This folder does not contain any audio files',
-                            //           style: theme.textTheme.bodySmall?.copyWith(
-                            //             color: AppColors.errorRed,
-                            //             fontWeight: FontWeight.w500,
-                            //           ),
-                            //           maxLines: 2,
-                            //           overflow: TextOverflow.ellipsis,
-                            //         ),
-                            //       ],
-                            //     ),
-                            //   ),
+                            if (folderProvider.musicFolders[i].status == FolderStatus.invalid)
+                              Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.errorRed.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.3), width: 1),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.error_outline_rounded, size: 16, color: AppColors.errorRed),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'This folder does not contain any audio files',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: AppColors.errorRed,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                       ),
