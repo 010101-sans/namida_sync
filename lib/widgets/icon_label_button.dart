@@ -26,7 +26,7 @@ class IconLabelButton extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
-        debugPrint('[IconLabelButton] $label tapped');
+        // debugPrint('[IconLabelButton] $label tapped');
         onTap();
       },
       // [2] Icon Label Button

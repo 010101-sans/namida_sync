@@ -104,7 +104,7 @@ class CustomCard extends StatelessWidget {
                         theme.textTheme.displayLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
-                          fontSize: 18.0,
+                          fontSize: 16.0,
                         ),
                   ),
                 ),
