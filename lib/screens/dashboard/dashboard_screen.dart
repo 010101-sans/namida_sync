@@ -366,7 +366,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                   // [4.2] Google Drive
                   IconLabelButton(
                     icon: Icons.cloud,
-                    label: 'GDrive',
+                    label: 'Google Drive',
                     selected: _selectedSyncMethod == 1,
                     onTap: () {
                       setState(() {
@@ -470,7 +470,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                         // [1.3.2] Google Drive
                         IconLabelButton(
                           icon: Icons.cloud,
-                          label: 'GDrive',
+                          label: 'Google Drive',
                           selected: _selectedSyncMethod == 1,
                           onTap: () {
                             setState(() {
