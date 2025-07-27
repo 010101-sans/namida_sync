@@ -114,8 +114,9 @@ class CustomCard extends StatelessWidget {
                   children: [
                     if (headerActions != null) ...headerActions!,
                     if (statusWidget != null) ...[
-                      const SizedBox(width: 8),
+                      // const SizedBox(width: 10),
                       statusWidget!,
+                      const SizedBox(width: 12),
                     ] else if (statusIcon != null) ...[
                       const SizedBox(width: 8),
                       Container(

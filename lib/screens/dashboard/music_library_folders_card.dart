@@ -123,8 +123,8 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                             const SizedBox(height: 4),
 
                             // [1.4.1.2.2] Folder Path (Platform-specific formatting)
-                            LayoutBuilder(
-                              builder: (context, constraints) {
+                            Builder(
+                              builder: (context) {
                                 final normalizedPath = normalizePath(folderProvider.musicFolders[i].path);
                                 final displayPath = Platform.isAndroid
                                     ? normalizedPath.replaceFirst(
@@ -132,18 +132,14 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                                         'Internal Memory/',
                                       )
                                     : normalizedPath;
-                                return FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    displayPath,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                return Text(
+                                  displayPath,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                    fontSize: 12,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 );
                               },
                             ),

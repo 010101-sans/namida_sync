@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../widgets/custom_card.dart';
 import 'package:iconsax/iconsax.dart';
-import '../../../providers/local_network_provider.dart';
+import 'dart:io';
+import 'dart:math';
+
+import '../../../widgets/widgets.dart';
+import '../../../providers/providers.dart';
+import '../../../utils/utils.dart';
 
 // Server setup and configuration
 class LocalSetupCard extends StatefulWidget {
@@ -11,19 +15,43 @@ class LocalSetupCard extends StatefulWidget {
   State<LocalSetupCard> createState() => _LocalSetupCardState();
 }
 
-class _LocalSetupCardState extends State<LocalSetupCard> {
+class _LocalSetupCardState extends State<LocalSetupCard> with TickerProviderStateMixin {
   late TextEditingController _aliasController;
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
+
+  String _generateDefaultDeviceName() {
+    final platform = Platform.operatingSystem;
+    final random = Random();
+    final randomNumber = random.nextInt(9000) + 1000; // from 1000 to 9999
+    return '$platform-$randomNumber';
+  }
 
   @override
   void initState() {
     super.initState();
     final provider = Provider.of<LocalNetworkProvider>(context, listen: false);
-    _aliasController = TextEditingController(text: provider.deviceAlias);
+
+    // Generate default device name if provider doesn't have one or has generic "My Device"
+    final defaultName = (provider.deviceAlias.isNotEmpty && provider.deviceAlias != 'My Device')
+        ? provider.deviceAlias
+        : _generateDefaultDeviceName();
+
+    _aliasController = TextEditingController(text: defaultName);
+
+    // Setup blinking animation
+    _blinkController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
+    _blinkAnimation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut));
+    _blinkController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _aliasController.dispose();
+    _blinkController.dispose();
     super.dispose();
   }
 
@@ -33,149 +61,99 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
       builder: (context, provider, _) {
         final colorScheme = Theme.of(context).colorScheme;
         final theme = Theme.of(context);
-        
+
         return CustomCard(
-          leadingIcon: Iconsax.wifi,
-          title: 'Local Network Setup',
+          leadingIcon: Iconsax.radar_1,
+          title: 'Local Network Transfer',
           iconColor: colorScheme.primary,
-          statusIcon: provider.isServerRunning ? Iconsax.tick_circle : Iconsax.close_circle,
-          statusColor: provider.isServerRunning ? Colors.green : Colors.red,
-          statusLabel: provider.isServerRunning ? 'Active' : 'Inactive',
-          statusExplanation: provider.isServerRunning 
-              ? 'Server is running and ready to receive transfers'
-              : 'Server is not running. Start it to enable transfers.',
+          statusWidget: AnimatedBuilder(
+            animation: _blinkAnimation,
+            builder: (context, child) {
+              final isReady = provider.isServerRunning && 
+                             provider.ipAddress != null && 
+                             _aliasController.text.isNotEmpty;
+              final statusColor = isReady ? AppColors.successGreen : Colors.red;
+              return StatusDots(
+                color: statusColor,
+                animation: _blinkAnimation,
+                count: 3,
+                size: 8.0,
+                blurRadius: 6.0,
+                spreadRadius: 1.0,
+              );
+            },
+          ),
           body: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 16),
                 // [1] Status Section: Shows server running/inactive
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          provider.isServerRunning ? Iconsax.tick_circle : Iconsax.close_circle,
-                          color: provider.isServerRunning ? Colors.green : Colors.red,
-                          size: 20,
-                        ),
+                provider.isServerRunning
+                    ? StatusMessage.success(
+                        title: 'Server Running',
+                        subtitle: 'Ready to send and receive transfers',
+                      )
+                    : StatusMessage.error(
+                        title: 'Server Not Running',
+                        subtitle: 'Start the server for local network transfer',
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              provider.isServerRunning ? 'Server Running' : 'Server Not Running',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: provider.isServerRunning ? Colors.green : Colors.red,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              provider.isServerRunning 
-                                  ? 'Ready to receive transfers from other devices'
-                                  : 'Start the server to enable local network transfers',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha:0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // [2] Device Configuration Section
-                Text(
-                  'Device Configuration',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Device Alias Input
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Device Name',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
+
+                const SizedBox(height: 25),
+
+                // [2] Device Alias Input
+                TextFormField(
+                  controller: _aliasController,
+                  enabled: !provider.isServerRunning,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 25, right: 15, top: 15, bottom: 15), // Added right padding
+                      child: Icon(
+                        Platform.isAndroid ? Iconsax.mobile : Iconsax.monitor,
+                        color: colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _aliasController,
-                      enabled: !provider.isServerRunning,
-                      decoration: InputDecoration(
-                        hintText: 'Enter device name',
-                        filled: true,
-                        fillColor: colorScheme.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        prefixIcon: Icon(Iconsax.user, color: colorScheme.onSurface.withValues(alpha:0.6)),
-                      ),
+                    hintText: 'Enter device name',
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
                     ),
-                  ],
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
                 ),
-                
-                const SizedBox(height: 16),
-                
+                const SizedBox(height: 15),
+
                 // [3] Network Information
-                if (provider.ipAddress != null) ...[
+                if (provider.isServerRunning && provider.ipAddress != null) ...[
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.only(left: 18, right: 16, top: 16, bottom: 16),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
+                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
                         Container(
+                          margin: const EdgeInsets.only(right: 4),
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha:0.1),
+                            color: colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(
-                            Iconsax.global,
-                            color: colorScheme.primary,
-                            size: 20,
-                          ),
+                          child: Icon(Iconsax.global, color: colorScheme.primary, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -193,8 +171,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                               Text(
                                 '${provider.ipAddress}:${provider.port}',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withValues(alpha:0.7),
-                                  fontFamily: 'monospace',
+                                  color: colorScheme.onSurface.withValues(alpha: 0.7),
                                 ),
                               ),
                             ],
@@ -203,79 +180,37 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 10),
                 ],
-                
-                const SizedBox(height: 24),
-                
-                // [4] Action Buttons
-                Row(
-                  children: [
-                    if (!provider.isServerRunning)
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Iconsax.play, size: 18),
-                          label: const Text('Start Server'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          onPressed: () => provider.startServer(_aliasController.text),
-                        ),
-                      ),
-                    if (provider.isServerRunning) ...[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Iconsax.stop, size: 18),
-                          label: const Text('Stop Server'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: BorderSide(color: Colors.red),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: provider.stopServer,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // [5] Help Text
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Iconsax.info_circle,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Make sure both devices are on the same Wi-Fi or hotspot. If you have trouble, check your firewall and permissions.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha:0.7),
-                          ),
-                        ),
-                      ),
-                    ],
+
+                // [4] Action Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: ElevatedButton.icon(
+                    icon: Icon(provider.isServerRunning ? Iconsax.stop_circle : Iconsax.play, size: 24),
+                    label: Text(
+                      provider.isServerRunning ? 'Stop Server' : 'Start Server',
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: provider.isServerRunning ? Colors.red : colorScheme.primary, width: 2),
+                      foregroundColor: provider.isServerRunning ? Colors.red : colorScheme.primary,
+                      backgroundColor: theme.colorScheme.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 2,
+                    ),
+                    onPressed: () {
+                      if (provider.isServerRunning) {
+                        provider.stopServer();
+                      } else {
+                        provider.startServer(_aliasController.text);
+                      }
+                    },
                   ),
                 ),
+
+                const SizedBox(height: 10),
               ],
             ),
           ),
