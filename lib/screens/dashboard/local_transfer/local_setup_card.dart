@@ -39,7 +39,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> with TickerProviderStat
 
     _aliasController = TextEditingController(text: defaultName);
 
-    // Setup blinking animation
+    // Setup glowingblinking animation
     _blinkController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
     _blinkAnimation = Tween<double>(
       begin: 0.3,
@@ -64,7 +64,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> with TickerProviderStat
 
         return CustomCard(
           leadingIcon: Iconsax.radar_1,
-          title: 'Local Network Transfer',
+          title: 'Local Transfer',
           iconColor: colorScheme.primary,
           statusWidget: AnimatedBuilder(
             animation: _blinkAnimation,
@@ -92,10 +92,12 @@ class _LocalSetupCardState extends State<LocalSetupCard> with TickerProviderStat
                 // [1] Status Section: Shows server running/inactive
                 provider.isServerRunning
                     ? StatusMessage.success(
+                        icon: Iconsax.wifi,
                         title: 'Server Running',
                         subtitle: 'Ready to send and receive transfers',
                       )
                     : StatusMessage.error(
+                        icon: Iconsax.wifi,
                         title: 'Server Not Running',
                         subtitle: 'Start the server for local network transfer',
                       ),
@@ -109,7 +111,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> with TickerProviderStat
                   style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     prefixIcon: Padding(
-                      padding: const EdgeInsets.only(left: 25, right: 15, top: 15, bottom: 15), // Added right padding
+                      padding: const EdgeInsets.only(left: 25, right: 15, top: 15, bottom: 15),
                       child: Icon(
                         Platform.isAndroid ? Iconsax.mobile : Iconsax.monitor,
                         color: colorScheme.primary,
@@ -187,7 +189,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> with TickerProviderStat
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: ElevatedButton.icon(
-                    icon: Icon(provider.isServerRunning ? Iconsax.stop_circle : Iconsax.play, size: 24),
+                    icon: Icon(provider.isServerRunning ? Iconsax.pause : Iconsax.play, size: 24),
                     label: Text(
                       provider.isServerRunning ? 'Stop Server' : 'Start Server',
                       style: const TextStyle(fontSize: 15),

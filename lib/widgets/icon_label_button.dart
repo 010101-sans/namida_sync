@@ -55,18 +55,19 @@ class IconLabelButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // maybe the icon doesn't look good, i'll decide later
-                // Icon(icon, color: textColor, size: 22),
-                // const SizedBox(width: 8),
+                Icon(icon, color: textColor, size: 22),
+                const SizedBox(width: 8),
                 Flexible(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
                   ),
                 ),
               ],

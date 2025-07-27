@@ -23,7 +23,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerPr
   void initState() {
     super.initState();
 
-    // Setup blinking animation
+    // Setup glowing/blinking animation
     _blinkController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
     _blinkAnimation = Tween<double>(
       begin: 0.3,
@@ -78,7 +78,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerPr
         }
 
         return CustomCard(
-          leadingIcon: Iconsax.send_2,
+          leadingIcon: Iconsax.export_3,
           title: 'Send Backup',
           iconColor: colorScheme.primary,
           statusWidget: AnimatedBuilder(
@@ -115,14 +115,14 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerPr
                 if (deviceList.isEmpty) ...[
                   StatusMessage.info(
                     subtitle:
-                        'Send your backup and music library to another device on your local network.',
+                        'Send backup and music library to another local device.',
                     icon: Iconsax.info_circle,
                     primaryColor: colorScheme.primary,
                   ),
                   const SizedBox(height: 20),
                   StatusMessage.info(
                     subtitle:
-                        'On Windows, if device discovery isn\'t working, try disabling virtual network adapters (like VirtualBox Host-Only Network) in Device Manager, as they can interfere with UDP multicast discovery.',
+                        'On Windows, try disabling virtual network adapters in Device Manager if device discovery fails.',
                     icon: Iconsax.info_circle,
                     primaryColor: colorScheme.primary,
                   ),
@@ -283,6 +283,97 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerPr
                 ],
 
                 const SizedBox(height: 16),
+
+                // [8.5] Transfer Status Section
+                if ((provider.isSending || provider.progress == 1.0) &&
+                    (latestBackupZipPath != null || musicFolders.isNotEmpty)) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Transfer Status Title
+                          Text(
+                            'Transfer Status',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Backup Zip Status Row
+                          if (latestBackupZipPath != null)
+                            Row(
+                              children: [
+                                Icon(Iconsax.archive, color: theme.colorScheme.secondary, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Namida Backup Zip',
+                                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                buildLocalTransferStatusLabel(
+                                  context,
+                                  status: getLocalTransferBackupStatus(provider),
+                                ),
+                              ],
+                            ),
+
+                          // Music Folders Status
+                          if (musicFolders.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Iconsax.folder, color: colorScheme.primary, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'Music Folders',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.outline,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Divider(
+                                          indent: 15,
+                                          thickness: 1,
+                                          color: Colors.grey.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                    //   Expanded(
+                                    //     flex: 2,
+                                    //     child: LinearProgressIndicator(
+                                    //       color: Colors.grey.withValues(alpha: 0.5),
+                                    //     ),
+                                    //   ),
+                                    ],
+                                  ),
+                                ),
+                                buildLocalTransferStatusLabel(
+                                  context,
+                                  status: getLocalTransferMusicStatus(provider),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // [9] Transfer Progress
                 if (provider.isSending) ...[

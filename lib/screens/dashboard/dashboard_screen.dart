@@ -271,20 +271,20 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
           ),
         ),
         actions: [
-          Consumer<ThemeProvider>(
-            builder: (context, themeProvider, _) {
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              return IconButton(
-                icon: Icon(
-                  isDark ? Iconsax.sun_1 : Iconsax.moon,
-                  size: UIConstants.iconSizeL,
-                  color: colorScheme.primary,
-                ),
-                tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-                onPressed: () => themeProvider.toggleTheme(),
-              );
-            },
-          ),
+          //   Consumer<ThemeProvider>(
+          //     builder: (context, themeProvider, _) {
+          //       final isDark = Theme.of(context).brightness == Brightness.dark;
+          //       return IconButton(
+          //         icon: Icon(
+          //           isDark ? Iconsax.sun_1 : Iconsax.moon,
+          //           size: UIConstants.iconSizeL,
+          //           color: colorScheme.primary,
+          //         ),
+          //         tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+          //         onPressed: () => themeProvider.toggleTheme(),
+          //       );
+          //     },
+          //   ),
           IconButton(
             icon: Icon(Iconsax.info_circle, size: UIConstants.iconSizeL, color: colorScheme.primary),
             tooltip: 'Help',
@@ -327,7 +327,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
               // Wire the folder provider to the network provider
               final networkProvider = Provider.of<LocalNetworkProvider>(context, listen: false);
               networkProvider.setFolderProvider(folderProvider);
-              
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -363,41 +363,41 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // [4.1] Local Transfer
-                            IconLabelButton(
-                              icon: Icons.sync_alt,
-                              label: 'Local',
-                              selected: _selectedSyncMethod == 0,
-                              minWidth: 140,
-                              maxWidth: 160,
-                              onTap: () {
-                                setState(() {
-                                  _selectedSyncMethod = 0;
-                                  _pageController.animateToPage(
-                                    0,
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                });
-                              },
+                            Expanded(
+                              child: IconLabelButton(
+                                icon: Iconsax.radar_1,
+                                label: 'Local Transfer',
+                                selected: _selectedSyncMethod == 0,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSyncMethod = 0;
+                                    _pageController.animateToPage(
+                                      0,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  });
+                                },
+                              ),
                             ),
                             const SizedBox(width: 16),
                             // [4.2] Google Drive
-                            IconLabelButton(
-                              icon: Icons.cloud,
-                              label: 'Google Drive',
-                              selected: _selectedSyncMethod == 1,
-                              minWidth: 140,
-                              maxWidth: 160,
-                              onTap: () {
-                                setState(() {
-                                  _selectedSyncMethod = 1;
-                                  _pageController.animateToPage(
-                                    1,
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                });
-                              },
+                            Expanded(
+                              child: IconLabelButton(
+                                icon: Icons.cloud,
+                                label: 'Google Drive',
+                                selected: _selectedSyncMethod == 1,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSyncMethod = 1;
+                                    _pageController.animateToPage(
+                                      1,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  });
+                                },
+                              ),
                             ),
                           ],
                         );
@@ -447,115 +447,118 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
               // Wire the folder provider to the network provider
               final networkProvider = Provider.of<LocalNetworkProvider>(context, listen: false);
               networkProvider.setFolderProvider(folderProvider);
-              
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // [1] Left Column: Backup, Music, Transfer Options
-                  Flexible(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // [1.1] BackupFolderCard
-                        Consumer<FolderProvider>(
-                          builder: (context, folderProvider, _) => BackupFolderCard(
-                            folderProvider: folderProvider,
-                            noBackupFile: _noBackupFile,
-                            latestBackupName: _latestBackupName,
-                            latestBackupSize: _latestBackupSize,
-                            onEditBackupFolder: _selectBackupFolder,
-                            onRefresh: _findLatestBackupFile,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
 
-                        // [1.2] MusicLibraryFoldersCard
-                        Consumer<FolderProvider>(
-                          builder: (context, folderProvider, _) => MusicLibraryFoldersCard(
-                            folderProvider: folderProvider,
-                            driveProvider: Provider.of<GoogleDriveProvider>(context, listen: false),
-                            onAddMusicFolder: _addMusicFolder,
-                            onRemoveMusicFolder: _removeMusicFolder,
-                            onRefresh: _folderProvider.refreshFolderList,
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // [1] Left Column: Backup, Music, Transfer Options
+                    Flexible(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // [1.1] BackupFolderCard
+                          Consumer<FolderProvider>(
+                            builder: (context, folderProvider, _) => BackupFolderCard(
+                              folderProvider: folderProvider,
+                              noBackupFile: _noBackupFile,
+                              latestBackupName: _latestBackupName,
+                              latestBackupSize: _latestBackupSize,
+                              onEditBackupFolder: _selectBackupFolder,
+                              onRefresh: _findLatestBackupFile,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // [1.3] Row of IconLabelButtons for sync method selection
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // [1.3.1] Local Transfer
-                                  IconLabelButton(
-                                    icon: Icons.sync_alt,
-                                    label: 'Local',
-                                    selected: _selectedSyncMethod == 0,
-                                    minWidth: 140,
-                                    maxWidth: 160,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedSyncMethod = 0;
-                                        _pageController.animateToPage(
-                                          0,
-                                          duration: const Duration(milliseconds: 300),
-                                          curve: Curves.easeInOut,
-                                        );
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // [1.3.2] Google Drive
-                                  IconLabelButton(
-                                    icon: Icons.cloud,
-                                    label: 'Google Drive',
-                                    selected: _selectedSyncMethod == 1,
-                                    minWidth: 140,
-                                    maxWidth: 160,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedSyncMethod = 1;
-                                        _pageController.animateToPage(
-                                          1,
-                                          duration: const Duration(milliseconds: 300),
-                                          curve: Curves.easeInOut,
-                                        );
-                                      });
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
+                          const SizedBox(height: 20),
+                
+                          // [1.2] MusicLibraryFoldersCard
+                          Consumer<FolderProvider>(
+                            builder: (context, folderProvider, _) => MusicLibraryFoldersCard(
+                              folderProvider: folderProvider,
+                              driveProvider: Provider.of<GoogleDriveProvider>(context, listen: false),
+                              onAddMusicFolder: _addMusicFolder,
+                              onRemoveMusicFolder: _removeMusicFolder,
+                              onRefresh: _folderProvider.refreshFolderList,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: UIConstants.spacingL),
-                      ],
+                          const SizedBox(height: 20),
+                
+                          // [1.3] Row of IconLabelButtons for sync method selection
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // [1.3.1] Local Transfer
+                                    Expanded(
+                                      child: IconLabelButton(
+                                        icon: Iconsax.radar_1,
+                                        label: 'Local Transfer',
+                                        selected: _selectedSyncMethod == 0,
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedSyncMethod = 0;
+                                            _pageController.animateToPage(
+                                              0,
+                                              duration: const Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                            );
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // [1.3.2] Google Drive
+                                    Expanded(
+                                      child: IconLabelButton(
+                                        icon: Iconsax.cloud,
+                                        label: 'Google Drive',
+                                        selected: _selectedSyncMethod == 1,
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedSyncMethod = 1;
+                                            _pageController.animateToPage(
+                                              1,
+                                              duration: const Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                            );
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: UIConstants.spacingL),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 32),
-                  // [2] Right Column: ExpandablePageView
-                  Flexible(
-                    flex: 3,
-                    child: ExpandablePageView(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _selectedSyncMethod = index;
-                        });
-                      },
-                      children: [
-                        // [2.1] Local Transfer Page
-                        LocalTransferPage(),
-                        // [2.2] Google Drive Page
-                        GoogleDrivePage(),
-                      ],
+                    const SizedBox(width: 20),
+                    // [2] Right Column: ExpandablePageView
+                    Flexible(
+                      flex: 3,
+                      child: ExpandablePageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _selectedSyncMethod = index;
+                          });
+                        },
+                        children: [
+                          // [2.1] Local Transfer Page
+                          LocalTransferPage(),
+                          // [2.2] Google Drive Page
+                          GoogleDrivePage(),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),

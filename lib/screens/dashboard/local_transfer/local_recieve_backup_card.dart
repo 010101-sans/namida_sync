@@ -22,7 +22,7 @@ class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with Ti
   void initState() {
     super.initState();
     
-    // Setup blinking animation
+    // Setup glowig/blinking animation
     _blinkController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -108,6 +108,87 @@ class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with Ti
                       ),
                 
                 const SizedBox(height: 16),
+                
+                // [1.5] Receive Status Section
+                if ((provider.isReceiving || provider.progress == 1.0)) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Receive Status Title
+                          Text(
+                            'Receive Status',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Backup Zip Status Row
+                          Row(
+                            children: [
+                              Icon(Iconsax.archive, color: theme.colorScheme.secondary, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Namida Backup Zip',
+                                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              buildLocalTransferStatusLabel(
+                                context,
+                                status: getLocalReceiveBackupStatus(provider),
+                              ),
+                            ],
+                          ),
+
+                          // Music Folders Status
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Iconsax.folder, color: colorScheme.primary, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Music Folders',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.outline,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Divider(
+                                        indent: 15,
+                                        thickness: 1,
+                                        color: Colors.grey.withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              buildLocalTransferStatusLabel(
+                                context,
+                                status: getLocalReceiveMusicStatus(provider),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 
                 // [2] Incoming Transfer Section - Only show when actually receiving
                 if (showIncomingTransfer) ...[
