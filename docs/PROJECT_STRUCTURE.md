@@ -12,54 +12,67 @@ Namida Sync uses a modular, maintainable project structure for scalability, clar
 
 ```
 lib/
-|   
 |   firebase_options.dart
 |   main.dart
 |   
 +---models
-|       folder_info.dart
 |       models.dart
+|       folder_info.dart
+|       local_network_models.dart
 |       sync_manifest.dart
+|       transfer_manifest.dart
+|       transfer_session.dart
 |       
 +---providers
+|       providers.dart
 |       folder_provider.dart
 |       google_auth_provider.dart
 |       google_drive_provider.dart
-|       providers.dart
+|       local_network_provider.dart
 |       theme_provider.dart
-|
+|       
 +---screens
 |   +---about
 |   |       about_screen.dart
-|   |
+|   |       
 |   \---dashboard
 |       |   backup_folder_card.dart
 |       |   dashboard_screen.dart
 |       |   music_library_folders_card.dart
+|       |   
+|       +---google_drive
+|       |       google_drive_page.dart
+|       |       backup_card.dart
+|       |       google_account.dart
+|       |       restore_card.dart
 |       |
-|       \---google_drive
-|               backup_card.dart
-|               google_account.dart
-|               helper_methods.dart
-|               restore_card.dart
+|       \---local_transfer
+|               local_transfer_page.dart
+|               local_recieve_backup_card.dart
+|               local_send_backup_card.dart
+|               local_setup_card.dart
 |
 +---services
+|       services.dart
 |       folder_service.dart
 |       google_auth_service.dart
 |       google_drive_service.dart
-|       services.dart
+|       local_network_service.dart
 |
 +---utils
+|       utils.dart
 |       app_theme.dart
 |       credentials.dart
 |       google_drive_utils.dart
+|       helper_methods.dart
 |       permissions_utils.dart
 |       storage_utils.dart
 |       ui_constants.dart
-|       utils.dart
-|    
+|
 \---widgets
+        widgets.dart
         custom_card.dart
+        icon_label_button.dart
 ```
 
 ## Folder Descriptions

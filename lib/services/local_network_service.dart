@@ -1,34 +1,37 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
-import '../models/transfer_manifest.dart';
-import '../providers/local_network_provider.dart';
-import '../providers/folder_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/models.dart';
+import '../providers/local_network_provider.dart';
 import '../utils/helper_methods.dart';
 
-/// Service for local network backup/restore: device discovery, server, and file transfer.
+// To Handle all local network operations (discovery, server, transfer)
 class LocalNetworkService {
+
+  // [1] Constants and State
   static const int defaultPort = 53317;
   static const String multicastAddress = '224.0.0.251';
   static const Duration discoveryTimeout = Duration(seconds: 2);
   HttpServer? _httpServer;
   bool _isServerRunning = false;
 
-  // In-memory session for demonstration
   Map<String, dynamic>? _latestManifestJson;
   List<String> _receivedFilePaths = [];
   int _expectedFileCount = 0;
   bool _receiveBackupTriggered = false;
   LocalNetworkProvider? provider;
-
-  Directory? _backupDir;
-  Directory? _musicDir;
-
   String? _deviceUuid;
+  String _alias = '';
 
+  // [2] Provider Setter : Allow setting the provider for callbacks
+  void setProvider(LocalNetworkProvider p) {
+    provider = p;
+  }
+
+  // [3] Device UUID Management
   Future<String> get deviceUuid async {
     if (_deviceUuid != null) return _deviceUuid!;
     final prefs = await SharedPreferences.getInstance();
@@ -40,58 +43,34 @@ class LocalNetworkService {
     return _deviceUuid!;
   }
 
+  // [4] Temp Directory Management
   String get tempRoot {
     if (Platform.isWindows) {
       return 'C:/NamidaSync';
     } else if (Platform.isAndroid) {
       return '/storage/emulated/0/NamidaSync';
     } else {
-      return Directory.systemTemp.path + '/NamidaSync';
+      return '${Directory.systemTemp.path}/NamidaSync';
     }
   }
 
-  // Set backup and music directories from FolderProvider
-  void setDirsFromFolderProvider(FolderProvider folderProvider) {
-    final backupPath = folderProvider.backupFolder?.path;
-    final musicPaths = folderProvider.musicFolders.map((f) => f.path).toList();
-    if (backupPath != null && backupPath.isNotEmpty) {
-      _backupDir = Directory(backupPath);
-    }
-    // For music, use the first folder as root for now (can be extended for multi-root)
-    if (musicPaths.isNotEmpty) {
-      _musicDir = Directory(musicPaths.first);
-    }
-  }
-
-  // Existing method for manual setting
-  void setBackupAndMusicDirs({required Directory backupDir, required Directory musicDir}) {
-    _backupDir = backupDir;
-    _musicDir = musicDir;
-  }
-
-  // Allow setting the provider for callbacks
-  void setProvider(LocalNetworkProvider p) {
-    provider = p;
-  }
-
-  // Fetch the local IP address for display/debugging, prefer Wi-Fi/Ethernet
+  // [5] Fetch the local IP address for display/debugging, prefer Wi-Fi/Ethernet
   Future<String?> getLocalIpAddress() async {
     try {
       final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
       for (var interface in interfaces) {
-        debugPrint('[LocalNetworkService] Interface: ${interface.name}');
+        // debugPrint('[LocalNetworkService] Interface: ${interface.name}');
         // Prefer Wi-Fi/Ethernet interfaces
         if (interface.name.toLowerCase().contains('wlan') ||
             interface.name.toLowerCase().contains('wi-fi') ||
             interface.name.toLowerCase().contains('eth')) {
           for (var addr in interface.addresses) {
-            debugPrint('[LocalNetworkService] Found address: ${addr.address}');
+            // debugPrint('[LocalNetworkService] Found address: ${addr.address}');
             if (!addr.isLoopback &&
                 (addr.address.startsWith('192.') ||
-                 addr.address.startsWith('10.') ||
-                 addr.address.startsWith('172.'))
-            ) {
-              debugPrint('[LocalNetworkService] Selected local IP: ${addr.address} (interface: ${interface.name})');
+                    addr.address.startsWith('10.') ||
+                    addr.address.startsWith('172.'))) {
+              // debugPrint('[LocalNetworkService] Selected local IP: ${addr.address} (interface: ${interface.name})');
               return addr.address;
             }
           }
@@ -101,41 +80,42 @@ class LocalNetworkService {
       for (var interface in interfaces) {
         for (var addr in interface.addresses) {
           if (!addr.isLoopback &&
-              (addr.address.startsWith('192.') ||
-               addr.address.startsWith('10.') ||
-               addr.address.startsWith('172.'))
-          ) {
-            debugPrint('[LocalNetworkService] Fallback local IP: ${addr.address} (interface: ${interface.name})');
+              (addr.address.startsWith('192.') || addr.address.startsWith('10.') || addr.address.startsWith('172.'))) {
+            // debugPrint('[LocalNetworkService] Fallback local IP: ${addr.address} (interface: ${interface.name})');
             return addr.address;
           }
         }
       }
     } catch (e) {
-      debugPrint('[LocalNetworkService] Error getting local IP: $e');
+      // debugPrint('[LocalNetworkService] Error getting local IP: $e');
     }
     return null;
   }
 
-  /// Start the local HTTP server for receiving files.
+  // [6] HTTP Server Management
+
+  // [6.1] Start the local HTTP server for receiving files.
   Future<void> startServer({required String alias}) async {
-    if (_isServerRunning) return;
-    _alias = alias;
-    debugPrint('[LocalNetworkService] Starting server with alias: $alias');
-    // Ensure UUID is generated
-    await deviceUuid;
     
+    if (_isServerRunning) return;
+
+    _alias = alias;
+    
+    // debugPrint('[LocalNetworkService] Starting server with alias: $alias');
+    await deviceUuid;
+
     // Reset provider flags when starting a new server session
     if (provider != null) {
       provider!.reset();
     }
-    
+
     _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
     _isServerRunning = true;
-    debugPrint('[LocalNetworkService] HTTP server started on port $defaultPort');
+    // debugPrint('[LocalNetworkService] HTTP server started on port $defaultPort');
 
     _httpServer!.listen((HttpRequest request) async {
       final path = request.uri.path;
-      debugPrint('[LocalNetworkService] Incoming request: $path');
+      // debugPrint('[LocalNetworkService] Incoming request: $path');
       if (path == '/api/namidasync/v1/register') {
         await _handleRegister(request);
       } else if (path == '/api/namidasync/v1/prepare-upload') {
@@ -153,26 +133,27 @@ class LocalNetworkService {
     });
   }
 
-  /// Stop the local server.
+  // [6.2] Stop the local server.
   Future<void> stopServer() async {
     if (_httpServer != null) {
-      debugPrint('[LocalNetworkService] Stopping server...');
+      
+      // debugPrint('[LocalNetworkService] Stopping server...');
       await _httpServer!.close(force: true);
       _httpServer = null;
       _isServerRunning = false;
-      
+
       // Reset provider flags when stopping the server
       if (provider != null) {
         provider!.reset();
       }
-      
-      debugPrint('[LocalNetworkService] HTTP server stopped');
+
+      // debugPrint('[LocalNetworkService] HTTP server stopped');
     }
   }
 
-  // --- Endpoint Handlers ---
+  // [7] HTTP Endpoint Handlers
 
-  String _alias = '';
+  // [7.1] Register handler
   Future<void> _handleRegister(HttpRequest request) async {
     // Respond with alias and uuid for HTTP scan
     final uuid = await deviceUuid;
@@ -182,6 +163,7 @@ class LocalNetworkService {
       ..close();
   }
 
+  // [7.2] Upload preparation handler
   Future<void> _handlePrepareUpload(HttpRequest request) async {
     try {
       final content = await utf8.decoder.bind(request).join();
@@ -190,7 +172,7 @@ class LocalNetworkService {
       _receivedFilePaths = [];
       _expectedFileCount = (manifestJson['files'] as List).length;
       _receiveBackupTriggered = false; // Reset flag for new transfer
-      debugPrint('[LocalNetworkService] Received manifest: $manifestJson');
+      // debugPrint('[LocalNetworkService] Received manifest: $manifestJson');
 
       // Save manifest to file for restore process
       final manifestDir = '$tempRoot/Manifests';
@@ -199,20 +181,23 @@ class LocalNetworkService {
       final manifestFile = File(manifestPath);
       await manifestFile.writeAsString(content);
       // Don't add manifest to _receivedFilePaths since it's not part of the file count
-      debugPrint('[LocalNetworkService] Manifest saved to: $manifestPath');
+      // [7.3] Manifest saved
+      // debugPrint('[LocalNetworkService] Manifest saved to: $manifestPath');
 
       bool accepted = true;
       if (provider != null && provider!.onIncomingBackup != null) {
         final manifest = TransferManifest(
           backupName: manifestJson['backupName'] ?? 'Unknown',
           files: (manifestJson['files'] as List)
-              .map((f) => TransferFileEntry(
-                    name: f['name'],
-                    path: '',
-                    size: f['size'],
-                    folderLabel: f['folderLabel'] ?? '',
-                    relativePath: f['relativePath'] ?? '',
-                  ))
+              .map(
+                (f) => TransferFileEntry(
+                  name: f['name'],
+                  path: '',
+                  size: f['size'],
+                  folderLabel: f['folderLabel'] ?? '',
+                  relativePath: f['relativePath'] ?? '',
+                ),
+              )
               .toList(),
         );
         accepted = await provider!.onIncomingBackup!(manifest) == true;
@@ -225,33 +210,37 @@ class LocalNetworkService {
           ..close();
       } else {
         // User declined the backup - clean up and reset state
-        debugPrint('[LocalNetworkService] User declined backup, cleaning up...');
-        
+        // [7.4] User declined backup
+        // debugPrint('[LocalNetworkService] User declined backup, cleaning up...');
+
         // Clean up manifest file
         try {
           final manifestPath = '$tempRoot/Manifests/manifest.json';
           final manifestFile = File(manifestPath);
           if (await manifestFile.exists()) {
             await manifestFile.delete();
-            debugPrint('[LocalNetworkService] Deleted manifest file after user declined: $manifestPath');
+            // [7.5] Deleted manifest file after user declined
+            // debugPrint('[LocalNetworkService] Deleted manifest file after user declined: $manifestPath');
           }
         } catch (e) {
-          debugPrint('[LocalNetworkService] Error deleting manifest file after decline: $e');
+          // [7.6] Error deleting manifest file after decline
+          // debugPrint('[LocalNetworkService] Error deleting manifest file after decline: $e');
         }
-        
+
         // Reset service state
         _latestManifestJson = null;
         _receivedFilePaths.clear();
         _expectedFileCount = 0;
         _receiveBackupTriggered = false;
-        
+
         request.response
           ..statusCode = HttpStatus.forbidden
           ..write('Transfer declined by user')
           ..close();
       }
     } catch (e) {
-      debugPrint('[LocalNetworkService] Error parsing manifest: $e');
+      // [7.7] Error parsing manifest
+      // debugPrint('[LocalNetworkService] Error parsing manifest: $e');
       request.response
         ..statusCode = HttpStatus.badRequest
         ..write('Invalid manifest')
@@ -259,6 +248,7 @@ class LocalNetworkService {
     }
   }
 
+  // [7.3] Upload handler
   Future<void> _handleUpload(HttpRequest request) async {
     try {
       final type = request.uri.queryParameters['type'];
@@ -274,14 +264,16 @@ class LocalNetworkService {
         _receivedFilePaths.add(normalizePath(savePath));
       } else if (type == 'music' && relativePath != null) {
         final folderLabel = request.uri.queryParameters['folderLabel'] ?? '';
-        final musicDir = tempRoot + '/MusicLibrary';
-        savePath = musicDir + '/' + folderLabel + (relativePath.isNotEmpty ? '/' + relativePath : '');
+        final musicDir = '$tempRoot/MusicLibrary';
+        savePath = '$musicDir/$folderLabel${relativePath.isNotEmpty ? '/$relativePath' : ''}';
         String parentDir = '';
         final lastSlash = relativePath.lastIndexOf('/');
         if (lastSlash != -1) {
           parentDir = relativePath.substring(0, lastSlash);
         }
-        await Directory(musicDir + '/' + folderLabel + (parentDir.isNotEmpty ? '/' + parentDir : '')).create(recursive: true);
+        await Directory(
+          '$musicDir/$folderLabel${parentDir.isNotEmpty ? '/$parentDir' : ''}',
+        ).create(recursive: true);
         _receivedFilePaths.add(normalizePath(savePath));
       } else {
         request.response
@@ -299,36 +291,41 @@ class LocalNetworkService {
       }).asFuture();
       await sink.close();
 
-      debugPrint('[LocalNetworkService] File saved: ${saveFile.path}');
+      // [7.8] File saved
+      // debugPrint('[LocalNetworkService] File saved: ${saveFile.path}');
       request.response
         ..statusCode = HttpStatus.ok
         ..write('File received')
         ..close();
 
       // Only trigger receiveBackup when all files in the manifest are received
-      if (_latestManifestJson != null && provider != null && _receivedFilePaths.length >= _expectedFileCount && !_receiveBackupTriggered) {
+      if (_latestManifestJson != null &&
+          provider != null &&
+          _receivedFilePaths.length >= _expectedFileCount &&
+          !_receiveBackupTriggered) {
         _receiveBackupTriggered = true;
-        debugPrint('[LocalNetworkService] All files received, triggering receiveBackup');
+        // [7.9] All files received
+        // debugPrint('[LocalNetworkService] All files received, triggering receiveBackup');
         final manifest = TransferManifest(
           backupName: _latestManifestJson!['backupName'] ?? 'Unknown',
           files: (_latestManifestJson!['files'] as List)
-              .map((f) => TransferFileEntry(
-                    name: f['name'],
-                    path: '', // Do not use sender-local path
-                    size: f['size'],
-                    folderLabel: f['folderLabel'] ?? '',
-                    relativePath: f['relativePath'] ?? '',
-                  ))
+              .map(
+                (f) => TransferFileEntry(
+                  name: f['name'],
+                  path: '', // Do not use sender-local path
+                  size: f['size'],
+                  folderLabel: f['folderLabel'] ?? '',
+                  relativePath: f['relativePath'] ?? '',
+                ),
+              )
               .toList(),
         );
         // Trigger receiveBackup which will handle the restore process
-        provider!.receiveBackup(
-          manifest: manifest,
-          filePaths: List<String>.from(_receivedFilePaths),
-        );
+        provider!.receiveBackup(manifest: manifest, filePaths: List<String>.from(_receivedFilePaths));
       }
     } catch (e) {
-      debugPrint('[LocalNetworkService] Error saving file: $e');
+      // [7.10] Error saving file
+      // debugPrint('[LocalNetworkService] Error saving file: $e');
       request.response
         ..statusCode = HttpStatus.internalServerError
         ..write('File save error')
@@ -336,10 +333,10 @@ class LocalNetworkService {
     }
   }
 
+  // [7.4] Cancel handler
   Future<void> _handleCancel(HttpRequest request) async {
-    // Cancel the current session/transfer
-    debugPrint('[LocalNetworkService] Cancelling current transfer/session');
-    
+    // debugPrint('[LocalNetworkService] Cancelling current transfer/session');
+
     // Clean up manifest file if it exists
     if (_latestManifestJson != null) {
       try {
@@ -347,13 +344,13 @@ class LocalNetworkService {
         final manifestFile = File(manifestPath);
         if (await manifestFile.exists()) {
           await manifestFile.delete();
-          debugPrint('[LocalNetworkService] Deleted manifest file: $manifestPath');
+          // debugPrint('[LocalNetworkService] Deleted manifest file: $manifestPath');
         }
       } catch (e) {
-        debugPrint('[LocalNetworkService] Error deleting manifest file: $e');
+        // debugPrint('[LocalNetworkService] Error deleting manifest file: $e');
       }
     }
-    
+
     _latestManifestJson = null;
     _receivedFilePaths.clear();
     _expectedFileCount = 0;
@@ -365,21 +362,19 @@ class LocalNetworkService {
       ..close();
   }
 
-  /// Send a UDP multicast hello packet to announce this device.
+  // [8] Device Discovery (UDP/HTTP)
+
+  // [8.1] Send a UDP multicast hello packet to announce this device.
   Future<void> sendHello({required String alias, int? port}) async {
     final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
     final uuid = await deviceUuid;
-    final helloMsg = jsonEncode({
-      'alias': alias,
-      'port': port ?? defaultPort,
-      'uuid': uuid,
-    });
-    debugPrint('[LocalNetworkService] Sending hello packet to $multicastAddress:$defaultPort');
+    final helloMsg = jsonEncode({'alias': alias, 'port': port ?? defaultPort, 'uuid': uuid});
+    // debugPrint('[LocalNetworkService] Sending hello packet to $multicastAddress:$defaultPort');
     socket.send(utf8.encode(helloMsg), InternetAddress(multicastAddress), defaultPort);
     socket.close();
   }
 
-  /// Listen for hello packets and collect discovered devices.
+  // [8.2] Listen for hello packets and collect discovered devices.
   Future<List<DiscoveredDevice>> listenForHellos() async {
     final List<DiscoveredDevice> devices = [];
     // Remove reusePort:true for compatibility
@@ -388,7 +383,7 @@ class LocalNetworkService {
     final completer = Completer<List<DiscoveredDevice>>();
     final foundIps = <String>{};
 
-    debugPrint('[LocalNetworkService] Listening for hello packets on $defaultPort');
+    // debugPrint('[LocalNetworkService] Listening for hello packets on $defaultPort');
     Timer(discoveryTimeout, () {
       socket.close();
       if (!completer.isCompleted) completer.complete(devices);
@@ -402,18 +397,20 @@ class LocalNetworkService {
             final msg = utf8.decode(datagram.data);
             final data = jsonDecode(msg);
             final ip = datagram.address.address;
-            debugPrint('[LocalNetworkService] Received hello from $ip: $data');
+            // debugPrint('[LocalNetworkService] Received hello from $ip: $data');
             if (!foundIps.contains(ip)) {
               foundIps.add(ip);
-              devices.add(DiscoveredDevice(
-                alias: data['alias'] ?? 'Unknown',
-                ip: ip,
-                port: data['port'] ?? defaultPort,
-                uuid: data['uuid'] ?? '',
-              ));
+              devices.add(
+                DiscoveredDevice(
+                  alias: data['alias'] ?? 'Unknown',
+                  ip: ip,
+                  port: data['port'] ?? defaultPort,
+                  uuid: data['uuid'] ?? '',
+                ),
+              );
             }
           } catch (e) {
-            debugPrint('[LocalNetworkService] Error decoding hello packet: $e');
+            // debugPrint('[LocalNetworkService] Error decoding hello packet: $e');
           }
         }
       }
@@ -422,7 +419,7 @@ class LocalNetworkService {
     return completer.future;
   }
 
-  /// HTTP subnet scan fallback for device discovery
+  // [8.3] HTTP subnet scan fallback for device discovery
   Future<List<DiscoveredDevice>> httpSubnetScan({required String alias}) async {
     final List<DiscoveredDevice> devices = [];
     final localIp = await getLocalIpAddress();
@@ -432,36 +429,49 @@ class LocalNetworkService {
     for (int i = 1; i < 255; i++) {
       final ip = '$subnet.$i';
       if (ip == localIp) continue;
-      futures.add(HttpClient()
-          .getUrl(Uri.parse('http://$ip:$defaultPort/api/namidasync/v1/register'))
-          .timeout(const Duration(milliseconds: 500))
-          .then((req) => req.close())
-          .then((resp) async {
-            if (resp.statusCode == 200) {
-              final body = await resp.transform(utf8.decoder).join();
-              try {
-                final data = jsonDecode(body);
-                debugPrint('[LocalNetworkService] HTTP scan found device at $ip: $data');
-                devices.add(DiscoveredDevice(alias: data['alias'] ?? 'Unknown', ip: ip, port: defaultPort, uuid: data['uuid'] ?? ''));
-              } catch (e) {
-                debugPrint('[LocalNetworkService] Error decoding HTTP scan response: $e');
+      futures.add(
+        HttpClient()
+            .getUrl(Uri.parse('http://$ip:$defaultPort/api/namidasync/v1/register'))
+            .timeout(const Duration(milliseconds: 500))
+            .then((req) => req.close())
+            .then((resp) async {
+              if (resp.statusCode == 200) {
+                final body = await resp.transform(utf8.decoder).join();
+                try {
+                  final data = jsonDecode(body);
+                  // debugPrint('[LocalNetworkService] HTTP scan found device at $ip: $data');
+                  devices.add(
+                    DiscoveredDevice(
+                      alias: data['alias'] ?? 'Unknown',
+                      ip: ip,
+                      port: defaultPort,
+                      uuid: data['uuid'] ?? '',
+                    ),
+                  );
+                } catch (e) {
+                  // debugPrint('[LocalNetworkService] Error decoding HTTP scan response: $e');
+                }
               }
-            }
-          })
-          .catchError((_) {}));
+            })
+            .catchError((_) {}),
+      );
     }
     await Future.wait(futures);
     return devices;
   }
 
-  /// Discover devices on the local network using UDP multicast and HTTP scan fallback.
-  Future<List<DiscoveredDevice>> discoverDevices({required String alias}) async {
+  // [8.4] Discover devices on the local network using UDP multicast and HTTP scan fallback.
+  Future<List<DiscoveredDevice>> discoverDevices({String alias = 'NamidaSync'}) async {
+    
     // Send hello so others can discover us
     await sendHello(alias: alias);
+    
     // Listen for hellos from others
     final multicastDevices = await listenForHellos();
+    
     // HTTP subnet scan fallback
     final httpDevices = await httpSubnetScan(alias: alias);
+
     // Merge and deduplicate, filter out local device
     final all = <String, DiscoveredDevice>{};
     final localIp = await getLocalIpAddress();
@@ -471,11 +481,14 @@ class LocalNetworkService {
     for (final d in httpDevices) {
       if (d.ip != localIp) all[d.ip] = d;
     }
-    debugPrint('[LocalNetworkService] All discovered devices (excluding self): ${all.values.map((d) => '${d.alias} (${d.ip}:${d.port})').join(', ')}');
+
+    // debugPrint('[LocalNetworkService] All discovered devices (excluding self): ${all.values.map((d) => '${d.alias} (${d.ip}:${d.port})').join(', ')}');
     return all.values.toList();
   }
 
-  /// Send a backup manifest and files to a target device.
+  // [9] File Transfer (Send/Receive)
+
+  // [9.1] Send a backup manifest and files to a target device.
   Future<void> sendBackup({
     required DiscoveredDevice target,
     required File manifest,
@@ -486,7 +499,7 @@ class LocalNetworkService {
     final manifestJson = jsonDecode(await manifest.readAsString());
     final manifestOk = await sendManifest(target: target, manifestJson: manifestJson);
     if (!manifestOk) {
-      debugPrint('[LocalNetworkService] Target declined manifest or failed.');
+      // debugPrint('[LocalNetworkService] Target declined manifest or failed.');
       onProgress?.call(0);
       return;
     }
@@ -500,11 +513,12 @@ class LocalNetworkService {
         onProgress: (p) => onProgress?.call(0.1 + 0.4 * p),
       );
       if (!okZip) {
-        debugPrint('[LocalNetworkService] Failed to send backup zip.');
+        // debugPrint('[LocalNetworkService] Failed to send backup zip.');
         onProgress?.call(0.1);
         return;
       }
     }
+
     // Send music files (rest)
     final musicFiles = files.length > 1 ? files.sublist(1) : [];
     final totalMusic = musicFiles.length;
@@ -517,7 +531,7 @@ class LocalNetworkService {
         onProgress: (p) => onProgress?.call(0.5 + 0.5 * ((i + p) / totalMusic)),
       );
       if (!ok) {
-        debugPrint('[LocalNetworkService] Failed to send music file: ${file.path}');
+        // debugPrint('[LocalNetworkService] Failed to send music file: ${file.path}');
         onProgress?.call(0.5 + 0.5 * (i / totalMusic));
         return;
       }
@@ -525,23 +539,21 @@ class LocalNetworkService {
     onProgress?.call(1.0);
   }
 
-  /// Handle receiving a backup (called by server endpoints).
+  // [9.2] Handle receiving a backup (called by server endpoints).
   Future<void> receiveBackup({
     required File manifest,
     required List<File> files,
     void Function(double progress)? onProgress,
   }) async {
-    // Receiving and saving files is handled by the server endpoints (_handleUpload, etc.)
-    // This method can be used for additional post-processing if needed.
-    debugPrint('[LocalNetworkService] receiveBackup called (stub).');
+    // Note: Receiving and saving files is handled by the server endpoints (_handleUpload, etc.)
+    // Note: This method can be used for additional post-processing if needed.
+
+    // debugPrint('[LocalNetworkService] receiveBackup called (stub).');
     onProgress?.call(1.0);
   }
 
-  /// Send the manifest to the target device.
-  Future<bool> sendManifest({
-    required DiscoveredDevice target,
-    required Map<String, dynamic> manifestJson,
-  }) async {
+  // [9.3] Send the manifest to the target device.
+  Future<bool> sendManifest({required DiscoveredDevice target, required Map<String, dynamic> manifestJson}) async {
     final url = Uri.http('${target.ip}:${target.port}', '/api/namidasync/v1/prepare-upload');
     final client = HttpClient();
     try {
@@ -552,21 +564,21 @@ class LocalNetworkService {
       final responseBody = await response.transform(utf8.decoder).join();
       return response.statusCode == 200 && responseBody.contains('Ready');
     } catch (e) {
-      debugPrint('[LocalNetworkService] Error sending manifest: $e');
+      // debugPrint('[LocalNetworkService] Error sending manifest: $e');
       return false;
     } finally {
       client.close();
     }
   }
 
-  /// Send a file (backup zip or music file) to the target device.
+  // [0.4] Send a file (backup zip or music file) to the target device.
   Future<bool> sendFile({
     required DiscoveredDevice target,
     required File file,
     required String type, // 'backupZip' or 'music'
     String? relativePath, // required for music files
     void Function(double progress)? onProgress,
-    String? name, // original file name for backupZip
+    String? name,        // original file name for backupZip
     String? folderLabel, // top-level music folder name
   }) async {
     final queryParams = {
@@ -594,36 +606,25 @@ class LocalNetworkService {
       final responseBody = await response.transform(utf8.decoder).join();
       return response.statusCode == 200 && responseBody.contains('File received');
     } catch (e) {
-      debugPrint('[LocalNetworkService] Error sending file: $e');
+      // debugPrint('[LocalNetworkService] Error sending file: $e');
       return false;
     } finally {
       client.close();
     }
   }
 
-  /// Request cancellation of the current transfer/session on this device.
+  // [9.5] Cancel Transfer
   Future<void> requestCancel() async {
     try {
-      final url = Uri.http('127.0.0.1:$defaultPort', '/api/namidasync/v1/cancel');
       final client = HttpClient();
-      final request = await client.postUrl(url);
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      debugPrint('[LocalNetworkService] Cancel response: ${response.statusCode} $responseBody');
+      // final url = Uri.http('127.0.0.1:$defaultPort', '/api/namidasync/v1/cancel');
+      // final request = await client.postUrl(url);
+      // final response = await request.close();
+      // final responseBody = await response.transform(utf8.decoder).join();
       client.close();
+      // debugPrint('[LocalNetworkService] Cancel response: ${response.statusCode} $responseBody');
     } catch (e) {
-      debugPrint('[LocalNetworkService] Error sending cancel request: $e');
+      // debugPrint('[LocalNetworkService] Error sending cancel request: $e');
     }
   }
-}
-
-/// Model for a discovered device on the network.
-class DiscoveredDevice {
-  final String alias;
-  final String ip;
-  final int port;
-  final String uuid;
-  // Add more fields as needed (e.g., device type, OS)
-
-  DiscoveredDevice({required this.alias, required this.ip, required this.port, required this.uuid});
 }

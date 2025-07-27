@@ -1,32 +1,18 @@
-// Represents a discovered device on the LAN.
+// [1] DiscoveredDevice: Model for a discovered device on the network.
 class DiscoveredDevice {
   final String alias;
   final String ip;
   final int port;
-  // Add more fields as needed (platform, deviceId, etc.)
-  DiscoveredDevice({required this.alias, required this.ip, required this.port});
-  Map<String, dynamic> toJson() => {
-    'alias': alias,
-    'ip': ip,
-    'port': port,
-  };
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DiscoveredDevice &&
-          runtimeType == other.runtimeType &&
-          alias == other.alias &&
-          ip == other.ip &&
-          port == other.port;
-  @override
-  int get hashCode => alias.hashCode ^ ip.hashCode ^ port.hashCode;
+  final String uuid;
+  // Add more fields as needed (e.g., device type, OS)
+  DiscoveredDevice({required this.alias, required this.ip, required this.port, required this.uuid});
 }
 
-// Represents a backup item (file or folder) to transfer.
+// [2] BackupItem: Represents a backup item (file or folder) to transfer.
 class BackupItem {
   final String name;
   final String path;
-  final String type; // 'zip' or 'folder'
+  final String type;    // 'zip' or 'folder'
   final String? status; // uploading, uploaded, downloading, downloaded, skipped, etc.
   BackupItem({required this.name, required this.path, required this.type, this.status});
   Map<String, dynamic> toJson() => {
@@ -43,11 +29,11 @@ class BackupItem {
   );
 }
 
-// Represents a local network transfer session (to be expanded).
+// [3] LocalNetworkSession: Represents a local network transfer session (to be expanded).
 class LocalNetworkSession {
   final Map<String, dynamic> manifest;
   final List<BackupItem> files;
-  final Map<String, double> progress; // file name -> progress (0.0-1.0)
+  final Map<String, double> progress; // file name -> progress (0.0 - 1.0)
   bool accepted;
   String? error;
 
