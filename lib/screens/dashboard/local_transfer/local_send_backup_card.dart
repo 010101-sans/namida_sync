@@ -6,6 +6,7 @@ import '../../../providers/local_network_provider.dart';
 import '../../../providers/folder_provider.dart';
 import 'dart:io';
 
+// Sending backup to another device
 class LocalSendBackupCard extends StatefulWidget {
   const LocalSendBackupCard({super.key});
   @override
@@ -23,7 +24,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
         final theme = Theme.of(context);
         final deviceList = provider.discoveredDevices.map((d) => '${d.alias} (${d.ip})').toList();
         
-        // Fetch actual backup zip file path
+        // [1] Fetch actual backup zip file path
         final backupFolderPath = folderProvider.backupFolder?.path;
         String? latestBackupZipPath;
         if (backupFolderPath != null && backupFolderPath.isNotEmpty) {
@@ -39,7 +40,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
           }
         }
         
-        // Fetch all music folder paths
+        // [2] Fetch all music folder paths
         final musicFolders = folderProvider.musicFolders.map((f) => Directory(f.path)).toList();
         
         return CustomCard(
@@ -65,20 +66,20 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Description
+                // [3] Description
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.05),
+                    color: colorScheme.primary.withValues(alpha:0.05),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+                    border: Border.all(color: colorScheme.primary.withValues(alpha:0.2)),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.1),
+                          color: colorScheme.primary.withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -102,7 +103,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                 
                 const SizedBox(height: 24),
                 
-                // Device Discovery Section
+                // [4] Device Discovery Section
                 Text(
                   'Available Devices',
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -112,14 +113,14 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Discovery Status
+                // [5] Discovery Status
                 if (provider.isDiscovering)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                      border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
                     ),
                     child: Row(
                       children: [
@@ -142,21 +143,21 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                     ),
                   ),
                 
-                // Device List
+                // [6] Device List
                 if (!provider.isDiscovering && deviceList.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.orange.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                      border: Border.all(color: Colors.orange.withValues(alpha:0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
+                            color: Colors.orange.withValues(alpha:0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -181,7 +182,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                               Text(
                                 'Make sure the other device is running and on the same network.',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                  color: colorScheme.onSurface.withValues(alpha:0.7),
                                 ),
                               ),
                             ],
@@ -191,14 +192,14 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                     ),
                   ),
                 
-                // Device Selection
+                // [7] Device Selection
                 if (deviceList.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                      border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,25 +220,25 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                             fillColor: colorScheme.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+                              borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+                              borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: colorScheme.primary, width: 2),
                             ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            prefixIcon: Icon(Iconsax.monitor, color: colorScheme.onSurface.withOpacity(0.6)),
+                            prefixIcon: Icon(Iconsax.monitor, color: colorScheme.onSurface.withValues(alpha:0.6)),
                           ),
                           items: deviceList
                               .map((d) => DropdownMenuItem(
                                     value: d,
                                     child: Row(
                                       children: [
-                                        Icon(Iconsax.monitor, size: 16, color: colorScheme.onSurface.withOpacity(0.6)),
+                                        Icon(Iconsax.monitor, size: 16, color: colorScheme.onSurface.withValues(alpha:0.6)),
                                         const SizedBox(width: 8),
                                         Text(d),
                                       ],
@@ -253,14 +254,14 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                 
                 const SizedBox(height: 24),
                 
-                // Transfer Progress
+                // [8] Transfer Progress
                 if (provider.isSending) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.05),
+                      color: colorScheme.primary.withValues(alpha:0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+                      border: Border.all(color: colorScheme.primary.withValues(alpha:0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +271,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withOpacity(0.1),
+                                color: colorScheme.primary.withValues(alpha:0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -294,14 +295,14 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                         const SizedBox(height: 16),
                         LinearProgressIndicator(
                           value: provider.progress,
-                          backgroundColor: colorScheme.primary.withOpacity(0.2),
+                          backgroundColor: colorScheme.primary.withValues(alpha:0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${(provider.progress * 100).toInt()}% complete',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.7),
+                            color: colorScheme.onSurface.withValues(alpha:0.7),
                           ),
                         ),
                       ],
@@ -309,21 +310,21 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                   ),
                 ],
                 
-                // Error Message
+                // [9] Error Message
                 if (provider.error != null)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(color: Colors.red.withValues(alpha:0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
+                            color: Colors.red.withValues(alpha:0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -345,21 +346,21 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                     ),
                   ),
                 
-                // Success Message
+                // [10] Success Message
                 if (!provider.isSending && provider.progress == 1.0 && provider.error == null)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      border: Border.all(color: Colors.green.withValues(alpha:0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
+                            color: Colors.green.withValues(alpha:0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -384,7 +385,7 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                 
                 const SizedBox(height: 24),
                 
-                // Send Button
+                // [11] Send Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(

@@ -4,9 +4,9 @@ import '../../../widgets/custom_card.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../../providers/local_network_provider.dart';
 
+// Server setup and configuration
 class LocalSetupCard extends StatefulWidget {
   const LocalSetupCard({super.key});
-
   @override
   State<LocalSetupCard> createState() => _LocalSetupCardState();
 }
@@ -49,14 +49,14 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Section
+                // [1] Status Section: Shows server running/inactive
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: (provider.isServerRunning ? Colors.green : Colors.red).withOpacity(0.1),
+                    color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: (provider.isServerRunning ? Colors.green : Colors.red).withOpacity(0.3),
+                      color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.3),
                       width: 1,
                     ),
                   ),
@@ -65,7 +65,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: (provider.isServerRunning ? Colors.green : Colors.red).withOpacity(0.2),
+                          color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -92,7 +92,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                                   ? 'Ready to receive transfers from other devices'
                                   : 'Start the server to enable local network transfers',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.7),
+                                color: colorScheme.onSurface.withValues(alpha:0.7),
                               ),
                             ),
                           ],
@@ -104,7 +104,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                 
                 const SizedBox(height: 24),
                 
-                // Device Configuration Section
+                // [2] Device Configuration Section
                 Text(
                   'Device Configuration',
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -135,18 +135,18 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                         fillColor: colorScheme.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+                          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+                          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: colorScheme.primary, width: 2),
                         ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        prefixIcon: Icon(Iconsax.user, color: colorScheme.onSurface.withOpacity(0.6)),
+                        prefixIcon: Icon(Iconsax.user, color: colorScheme.onSurface.withValues(alpha:0.6)),
                       ),
                     ),
                   ],
@@ -154,21 +154,21 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                 
                 const SizedBox(height: 16),
                 
-                // Network Information
+                // [3] Network Information
                 if (provider.ipAddress != null) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                      border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.1),
+                            color: colorScheme.primary.withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -193,7 +193,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                               Text(
                                 '${provider.ipAddress}:${provider.port}',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                  color: colorScheme.onSurface.withValues(alpha:0.7),
                                   fontFamily: 'monospace',
                                 ),
                               ),
@@ -207,7 +207,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                 
                 const SizedBox(height: 24),
                 
-                // Action Buttons
+                // [4] Action Buttons
                 Row(
                   children: [
                     if (!provider.isServerRunning)
@@ -249,13 +249,13 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                 
                 const SizedBox(height: 20),
                 
-                // Help Text
+                // [5] Help Text
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                    border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
                   ),
                   child: Row(
                     children: [
@@ -269,7 +269,7 @@ class _LocalSetupCardState extends State<LocalSetupCard> {
                         child: Text(
                           'Make sure both devices are on the same Wi-Fi or hotspot. If you have trouble, check your firewall and permissions.',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.7),
+                            color: colorScheme.onSurface.withValues(alpha:0.7),
                           ),
                         ),
                       ),

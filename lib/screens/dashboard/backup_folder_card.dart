@@ -136,15 +136,15 @@ class BackupFolderCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.errorRed.withValues(alpha: 0.1),
+                  color: AppColors.warningOrange.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.3), width: 1),
+                  border: Border.all(color: AppColors.warningOrange.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Row(
                   children: [
                     
                     // [4.1] Error Icon
-                    Icon(Iconsax.close_circle, size: 16, color: AppColors.errorRed),
+                    Icon(Iconsax.close_circle, size: 16, color: AppColors.warningOrange),
                     const SizedBox(width: 8),
 
                     // [4.2] Error Message
@@ -152,7 +152,7 @@ class BackupFolderCard extends StatelessWidget {
                       child: Text(
                         'No backup folder selected. Please select a folder to continue.',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.errorRed,
+                          color: AppColors.warningOrange,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
