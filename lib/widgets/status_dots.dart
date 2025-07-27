@@ -32,12 +32,12 @@ class StatusDots extends StatelessWidget {
           margin: margin ?? (i < count - 1 ? const EdgeInsets.only(right: 4) : null),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color,
+            color: color.withValues(alpha: animation.value),
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: animation.value * 0.8),
+                color: color.withValues(alpha: animation.value * 0.6), // controls 'glow'
                 blurRadius: blurRadius,
-                spreadRadius: spreadRadius,
+                spreadRadius: spreadRadius * animation.value,
               ),
             ],
           ),
