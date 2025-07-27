@@ -432,7 +432,7 @@ class LocalNetworkService {
       futures.add(
         HttpClient()
             .getUrl(Uri.parse('http://$ip:$defaultPort/api/namidasync/v1/register'))
-            .timeout(const Duration(milliseconds: 500))
+            .timeout(const Duration(milliseconds: 1000))
             .then((req) => req.close())
             .then((resp) async {
               if (resp.statusCode == 200) {

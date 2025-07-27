@@ -1,12 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../widgets/custom_card.dart';
 import 'package:iconsax/iconsax.dart';
-import '../../../providers/local_network_provider.dart';
+
+import '../../../widgets/widgets.dart';
+import '../../../providers/providers.dart';
+import '../../../utils/utils.dart';
 
 // Receiving backup from another device
-class LocalRecieveBackupCard extends StatelessWidget {
+class LocalRecieveBackupCard extends StatefulWidget {
   const LocalRecieveBackupCard({super.key});
+
+  @override
+  State<LocalRecieveBackupCard> createState() => _LocalRecieveBackupCardState();
+}
+
+class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with TickerProviderStateMixin {
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Setup blinking animation
+    _blinkController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _blinkAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
+    );
+    _blinkController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,90 +48,75 @@ class LocalRecieveBackupCard extends StatelessWidget {
         final incomingDevice = provider.currentSession?.senderAlias;
         
         // Only show incoming transfer messages if we're receiving
-        final showIncomingTransfer = incomingDevice != null && 
-                                   provider.isReceiving && 
-                                   !provider.isSending;
+        final showIncomingTransfer = incomingDevice != null && provider.isReceiving && !provider.isSending;
+        
+        // Determine status color and icon
+        // Color statusColor = Colors.grey;
+        // IconData statusIcon = Iconsax.receive_square;
+        
+        // if (provider.isReceiving) {
+        //   statusColor = Colors.orange;
+        //   statusIcon = Iconsax.clock;
+        // } else if (provider.isServerRunning) {
+        //   statusColor = AppColors.successGreen;
+        //   statusIcon = Iconsax.tick_circle;
+        // } else {
+        //   statusColor = Colors.red;
+        //   statusIcon = Iconsax.close_circle;
+        // }
         
         return CustomCard(
           leadingIcon: Iconsax.receive_square,
-          title: 'Receive Backup from Device',
+          title: 'Receive Backup',
           iconColor: colorScheme.primary,
-          statusIcon: provider.isReceiving ? Iconsax.clock : (provider.isServerRunning ? Iconsax.tick_circle : Iconsax.close_circle),
-          statusColor: provider.isReceiving ? Colors.orange : (provider.isServerRunning ? Colors.green : Colors.red),
-          statusLabel: provider.isReceiving ? 'Receiving...' : (provider.isServerRunning ? 'Listening' : 'Not Listening'),
-          statusExplanation: provider.isReceiving 
-              ? 'Currently receiving backup from another device'
-              : (provider.isServerRunning 
-                  ? 'Server is running and listening for incoming transfers'
-                  : 'Server is not running. Start it to receive transfers.'),
+          statusWidget: AnimatedBuilder(
+            animation: _blinkAnimation,
+            builder: (context, child) {
+              Color statusColor;
+              if (provider.isReceiving) {
+                statusColor = Colors.orange; // Receiving
+              } else if (provider.isServerRunning) {
+                statusColor = AppColors.successGreen; // Listening
+              } else {
+                statusColor = Colors.red; // Not listening
+              }
+              return StatusDots(
+                color: statusColor,
+                animation: _blinkAnimation,
+                count: 3,
+                size: 8.0,
+                blurRadius: 6.0,
+                spreadRadius: 1.0,
+              );
+            },
+          ),
           body: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 16),
                 // [1] Server Status Section
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: (provider.isServerRunning ? Colors.green : Colors.red).withValues(alpha:0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          provider.isServerRunning ? Iconsax.tick_circle : Iconsax.close_circle,
-                          color: provider.isServerRunning ? Colors.green : Colors.red,
-                          size: 20,
-                        ),
+                provider.isServerRunning
+                    ? StatusMessage.success(
+                        title: 'Listening for incoming transfers',
+                        subtitle: 'Ready to receive backups',
+                      )
+                    : StatusMessage.error(
+                        title: 'Not listening',
+                        subtitle: 'Start the server for incoming transfers',
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              provider.isServerRunning ? 'Listening for incoming transfers' : 'Not listening',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: provider.isServerRunning ? Colors.green : Colors.red,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              provider.isServerRunning 
-                                  ? 'Ready to receive backups from other devices'
-                                  : 'Start the server to enable incoming transfers',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha:0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 
                 // [2] Incoming Transfer Section - Only show when actually receiving
                 if (showIncomingTransfer) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha:0.05),
+                      color: colorScheme.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.primary.withValues(alpha:0.2)),
+                      border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,14 +126,10 @@ class LocalRecieveBackupCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(alpha:0.1),
+                                color: colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(
-                                Iconsax.notification,
-                                color: colorScheme.primary,
-                                size: 20,
-                              ),
+                              child: Icon(Iconsax.notification, color: colorScheme.primary, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -135,7 +147,7 @@ class LocalRecieveBackupCard extends StatelessWidget {
                                   Text(
                                     'From: $incomingDevice',
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurface.withValues(alpha:0.7),
+                                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
@@ -150,14 +162,13 @@ class LocalRecieveBackupCard extends StatelessWidget {
                               child: ElevatedButton.icon(
                                 icon: const Icon(Iconsax.tick_square, size: 18),
                                 label: const Text('Accept'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: AppColors.successGreen, width: 2),
+                                  foregroundColor: AppColors.successGreen,
+                                  backgroundColor: theme.colorScheme.surface,
                                   padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  elevation: 2,
                                 ),
                                 onPressed: () async {
                                   // Accept logic handled by provider callback
@@ -170,12 +181,12 @@ class LocalRecieveBackupCard extends StatelessWidget {
                                 icon: const Icon(Iconsax.close_circle, size: 18),
                                 label: const Text('Decline'),
                                 style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: Colors.red, width: 2),
                                   foregroundColor: Colors.red,
-                                  side: BorderSide(color: Colors.red),
+                                  backgroundColor: theme.colorScheme.surface,
                                   padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  elevation: 2,
                                 ),
                                 onPressed: () {
                                   // Decline logic handled by provider callback
@@ -194,9 +205,9 @@ class LocalRecieveBackupCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha:0.05),
+                      color: colorScheme.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.primary.withValues(alpha:0.2)),
+                      border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,14 +217,10 @@ class LocalRecieveBackupCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(alpha:0.1),
+                                color: colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(
-                                Iconsax.clock,
-                                color: colorScheme.primary,
-                                size: 20,
-                              ),
+                              child: Icon(Iconsax.clock, color: colorScheme.primary, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -231,7 +238,7 @@ class LocalRecieveBackupCard extends StatelessWidget {
                                   Text(
                                     'Please wait while the backup is being transferred',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurface.withValues(alpha:0.7),
+                                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
@@ -242,14 +249,14 @@ class LocalRecieveBackupCard extends StatelessWidget {
                         const SizedBox(height: 16),
                         LinearProgressIndicator(
                           value: provider.progress,
-                          backgroundColor: colorScheme.primary.withValues(alpha:0.2),
+                          backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${(provider.progress * 100).toInt()}% complete',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha:0.7),
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -259,12 +266,12 @@ class LocalRecieveBackupCard extends StatelessWidget {
                             icon: const Icon(Iconsax.close_circle, size: 18),
                             label: const Text('Cancel Transfer'),
                             style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.red, width: 2),
                               foregroundColor: Colors.red,
-                              side: BorderSide(color: Colors.red),
+                              backgroundColor: theme.colorScheme.surface,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              elevation: 2,
                             ),
                             onPressed: () async {
                               await provider.cancelTransfer();
@@ -278,118 +285,19 @@ class LocalRecieveBackupCard extends StatelessWidget {
                 
                 // [4] Error Message - Only show when receiving
                 if (provider.error != null && !provider.isSending)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withValues(alpha:0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha:0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Iconsax.close_circle,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            provider.error!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  StatusMessage.error(
+                    title: 'Transfer Failed',
+                    subtitle: provider.error!,
                   ),
                 
                 // [5] Success Message - Only show when receiving
                 if (!provider.isReceiving && !provider.isSending && provider.progress == 1.0 && provider.error == null)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withValues(alpha:0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha:0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Iconsax.tick_circle,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Backup received and restored successfully!',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Your backup and music files have been restored to your device',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withValues(alpha:0.7),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  StatusMessage.success(
+                    title: 'Backup received and restored successfully!',
+                    subtitle: 'Your backup and music files have been restored to your device',
                   ),
                 
-                const SizedBox(height: 20),
-                
-                // [6] Help Text
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Iconsax.info_circle,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'When you receive a backup, it will be automatically restored to your configured backup folder and music library.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha:0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 10),
               ],
             ),
           ),

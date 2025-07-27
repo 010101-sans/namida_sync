@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../widgets/custom_card.dart';
 import 'package:iconsax/iconsax.dart';
-import '../../../providers/local_network_provider.dart';
-import '../../../providers/folder_provider.dart';
 import 'dart:io';
+
+import '../../../widgets/widgets.dart';
+import '../../../providers/providers.dart';
+import '../../../utils/utils.dart';
 
 // Sending backup to another device
 class LocalSendBackupCard extends StatefulWidget {
@@ -13,9 +14,30 @@ class LocalSendBackupCard extends StatefulWidget {
   State<LocalSendBackupCard> createState() => _LocalSendBackupCardState();
 }
 
-class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
+class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerProviderStateMixin {
   String? selectedDevice;
-  
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup blinking animation
+    _blinkController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
+    _blinkAnimation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut));
+    _blinkController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<LocalNetworkProvider, FolderProvider>(
@@ -23,104 +45,122 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
         final colorScheme = Theme.of(context).colorScheme;
         final theme = Theme.of(context);
         final deviceList = provider.discoveredDevices.map((d) => '${d.alias} (${d.ip})').toList();
-        
+        // ignore: unused_local_variable
+        Color statusColor = Colors.grey;
+        // ignore: unused_local_variable
+        IconData statusIcon = Iconsax.send_2;
+
         // [1] Fetch actual backup zip file path
         final backupFolderPath = folderProvider.backupFolder?.path;
         String? latestBackupZipPath;
         if (backupFolderPath != null && backupFolderPath.isNotEmpty) {
           final dir = Directory(backupFolderPath);
-          final files = dir
-              .listSync()
-              .whereType<File>()
-              .where((f) => f.path.endsWith('.zip'))
-              .toList();
+          final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.zip')).toList();
           files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
           if (files.isNotEmpty) {
             latestBackupZipPath = files.first.path;
           }
         }
-        
+
         // [2] Fetch all music folder paths
         final musicFolders = folderProvider.musicFolders.map((f) => Directory(f.path)).toList();
-        
+
+        // [3] Determine status color and icon
+        if (provider.isSending) {
+          statusColor = Colors.orange;
+          statusIcon = Iconsax.clock;
+        } else if (provider.progress == 1.0 && provider.error == null) {
+          statusColor = AppColors.successGreen;
+          statusIcon = Iconsax.tick_circle;
+        } else if (provider.error != null) {
+          statusColor = Colors.red;
+          statusIcon = Iconsax.close_circle;
+        }
+
         return CustomCard(
           leadingIcon: Iconsax.send_2,
-          title: 'Send Backup to Device',
+          title: 'Send Backup',
           iconColor: colorScheme.primary,
-          statusIcon: provider.isSending ? Iconsax.clock : Iconsax.tick_circle,
-          statusColor: provider.isSending ? Colors.orange : (provider.progress == 1.0 && provider.error == null ? Colors.green : null),
-          statusLabel: provider.isSending ? 'Sending...' : (provider.progress == 1.0 && provider.error == null ? 'Complete' : null),
-          headerActions: [
-            IconButton(
-              icon: Icon(
-                Iconsax.refresh, 
-                color: colorScheme.primary,
-                size: 20,
-              ),
-              tooltip: 'Refresh Devices',
-              onPressed: provider.isDiscovering ? null : provider.refreshDevices,
-            ),
-          ],
+          statusWidget: AnimatedBuilder(
+            animation: _blinkAnimation,
+            builder: (context, child) {
+              Color statusColor;
+              if (provider.isSending) {
+                statusColor = Colors.orange;
+              } else if (provider.progress == 1.0 && provider.error == null) {
+                statusColor = AppColors.successGreen;
+              } else if (deviceList.isNotEmpty && latestBackupZipPath != null) {
+                statusColor = AppColors.successGreen; // Ready to send
+              } else {
+                statusColor = Colors.red; // Not ready
+              }
+              return StatusDots(
+                color: statusColor,
+                animation: _blinkAnimation,
+                count: 3,
+                size: 8.0,
+                blurRadius: 6.0,
+                spreadRadius: 1.0,
+              );
+            },
+          ),
           body: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // [3] Description
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha:0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colorScheme.primary.withValues(alpha:0.2)),
+                const SizedBox(height: 16),
+
+                // [4] Description
+                if (deviceList.isEmpty) ...[
+                  StatusMessage.info(
+                    subtitle:
+                        'Send your backup and music library to another device on your local network.',
+                    icon: Iconsax.info_circle,
+                    primaryColor: colorScheme.primary,
                   ),
+                  const SizedBox(height: 20),
+                  StatusMessage.info(
+                    subtitle:
+                        'On Windows, if device discovery isn\'t working, try disabling virtual network adapters (like VirtualBox Host-Only Network) in Device Manager, as they can interfere with UDP multicast discovery.',
+                    icon: Iconsax.info_circle,
+                    primaryColor: colorScheme.primary,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // [5] Device Discovery Section with Refresh Button
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha:0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Iconsax.info_circle,
-                          color: colorScheme.primary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Send your backup and music library to another device on your local network.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                          'Available Devices',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                             color: colorScheme.onSurface,
                           ),
                         ),
                       ),
+                      IconButton(
+                        icon: Icon(Iconsax.refresh, color: colorScheme.primary, size: 20),
+                        tooltip: 'Refresh Devices',
+                        onPressed: provider.isDiscovering ? null : provider.refreshDevices,
+                      ),
                     ],
                   ),
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // [4] Device Discovery Section
-                Text(
-                  'Available Devices',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
                 const SizedBox(height: 16),
-                
-                // [5] Discovery Status
-                if (provider.isDiscovering)
+
+                // [6] Discovery Status
+                if (provider.isDiscovering) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
+                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
@@ -135,133 +175,123 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                         const SizedBox(width: 12),
                         Text(
                           'Searching for devices...',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface,
-                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
                         ),
                       ],
                     ),
                   ),
-                
-                // [6] Device List
+                  const SizedBox(height: 16),
+                ],
+
+                // [7] Device List
                 if (!provider.isDiscovering && deviceList.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withValues(alpha:0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha:0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Iconsax.warning_2,
-                            color: Colors.orange,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'No devices found',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Make sure the other device is running and on the same network.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withValues(alpha:0.7),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  StatusMessage.warning(
+                    title: 'No devices found',
+                    subtitle: 'Make sure the other device is running and on the same network.',
                   ),
-                
-                // [7] Device Selection
+
+                // [8] Device Selection
                 if (deviceList.isNotEmpty) ...[
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withValues(alpha:0.2)),
+                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Select Target Device',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          value: selectedDevice,
-                          hint: const Text('Choose a device'),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: colorScheme.surface,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colorScheme.outline.withValues(alpha:0.3)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            prefixIcon: Icon(Iconsax.monitor, color: colorScheme.onSurface.withValues(alpha:0.6)),
-                          ),
-                          items: deviceList
-                              .map((d) => DropdownMenuItem(
-                                    value: d,
-                                    child: Row(
-                                      children: [
-                                        Icon(Iconsax.monitor, size: 16, color: colorScheme.onSurface.withValues(alpha:0.6)),
-                                        const SizedBox(width: 8),
-                                        Text(d),
-                                      ],
+                      children: deviceList.map((device) {
+                        final isSelected = selectedDevice == device;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: provider.isSending
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        selectedDevice = device;
+                                      });
+                                    },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? colorScheme.primary.withValues(alpha: 0.1) : colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.outline.withValues(alpha: 0.2),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Radio button
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? colorScheme.primary
+                                              : colorScheme.outline.withValues(alpha: 0.5),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: isSelected
+                                          ? Container(
+                                              margin: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: colorScheme.primary,
+                                              ),
+                                            )
+                                          : null,
                                     ),
-                                  ))
-                              .toList(),
-                          onChanged: provider.isSending ? null : (v) => setState(() => selectedDevice = v),
-                        ),
-                      ],
+                                    const SizedBox(width: 12),
+                                    // Device icon
+                                    Icon(
+                                      Iconsax.monitor,
+                                      size: 16,
+                                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // Device name
+                                    Expanded(
+                                      child: Text(
+                                        device,
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
-                
-                const SizedBox(height: 24),
-                
-                // [8] Transfer Progress
+
+                const SizedBox(height: 16),
+
+                // [9] Transfer Progress
                 if (provider.isSending) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha:0.05),
+                      color: colorScheme.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.primary.withValues(alpha:0.2)),
+                      border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,14 +301,10 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(alpha:0.1),
+                                color: colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(
-                                Iconsax.clock,
-                                color: colorScheme.primary,
-                                size: 20,
-                              ),
+                              child: Icon(Iconsax.clock, color: colorScheme.primary, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -295,118 +321,61 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                         const SizedBox(height: 16),
                         LinearProgressIndicator(
                           value: provider.progress,
-                          backgroundColor: colorScheme.primary.withValues(alpha:0.2),
+                          backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${(provider.progress * 100).toInt()}% complete',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha:0.7),
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
-                
-                // [9] Error Message
-                if (provider.error != null)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withValues(alpha:0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha:0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Iconsax.close_circle,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            provider.error!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                
-                // [10] Success Message
+
+                // [10] Error Message
+                if (provider.error != null) StatusMessage.error(title: 'Transfer Failed', subtitle: provider.error!),
+
+                // [11] Success Message
                 if (!provider.isSending && provider.progress == 1.0 && provider.error == null)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withValues(alpha:0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha:0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Iconsax.tick_circle,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Backup sent successfully!',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  StatusMessage.success(
+                    title: 'Backup sent successfully!',
+                    subtitle: 'Your backup has been transferred to the target device',
                   ),
-                
-                const SizedBox(height: 24),
-                
-                // [11] Send Button
-                SizedBox(
-                  width: double.infinity,
+
+                const SizedBox(height: 10),
+
+                // [12] Send Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   child: ElevatedButton.icon(
-                    icon: const Icon(Iconsax.send_2, size: 18),
-                    label: const Text('Send Backup'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+                    icon: Icon(provider.isSending ? Iconsax.stop_circle : Iconsax.send_2, size: 24),
+                    label: Text(provider.isSending ? 'Stop' : 'Send Backup', style: const TextStyle(fontSize: 15)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: provider.isSending ? Colors.red : colorScheme.primary, width: 2),
+                      foregroundColor: provider.isSending ? Colors.red : colorScheme.primary,
+                      backgroundColor: theme.colorScheme.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 2,
                     ),
-                    onPressed: provider.isSending || selectedDevice == null || latestBackupZipPath == null
+                    onPressed: provider.isSending
+                        ? () {
+                            // Stop sending logic
+                            provider.cancelTransfer();
+                          }
+                        : (selectedDevice == null || latestBackupZipPath == null)
                         ? null
                         : () async {
-                            final device = provider.discoveredDevices.firstWhere((d) => '${d.alias} (${d.ip})' == selectedDevice);
-                            debugPrint('[LocalSendBackupCard] Sending backup to ${device.alias} (${device.ip})');
-                            debugPrint('[LocalSendBackupCard] Backup zip: $latestBackupZipPath');
-                            debugPrint('[LocalSendBackupCard] Music folders: ${musicFolders.map((f) => f.path).join(", ")}');
+                            final device = provider.discoveredDevices.firstWhere(
+                              (d) => '${d.alias} (${d.ip})' == selectedDevice,
+                            );
+                            // debugPrint('[LocalSendBackupCard] Sending backup to ${device.alias} (${device.ip})');
+                            // debugPrint('[LocalSendBackupCard] Backup zip: $latestBackupZipPath');
+                            // debugPrint('[LocalSendBackupCard] Music folders: ${musicFolders.map((f) => f.path).join(", ")}');
                             await provider.sendBackup(
                               target: device,
                               backupZipPath: latestBackupZipPath!,
@@ -415,6 +384,8 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> {
                           },
                   ),
                 ),
+
+                const SizedBox(height: 10),
               ],
             ),
           ),

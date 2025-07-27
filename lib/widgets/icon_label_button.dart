@@ -7,6 +7,8 @@ class IconLabelButton extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final double? minWidth;
+  final double? maxWidth;
 
   const IconLabelButton({
     super.key,
@@ -14,6 +16,8 @@ class IconLabelButton extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.minWidth,
+    this.maxWidth,
   });
 
   @override
@@ -23,34 +27,51 @@ class IconLabelButton extends StatelessWidget {
     final bgColor = selected ? colorScheme.primary.withValues(alpha: 0.12) : colorScheme.surface;
     final borderColor = selected ? colorScheme.primary : colorScheme.outlineVariant;
     final textColor = selected ? colorScheme.primary : colorScheme.onSurface;
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        // debugPrint('[IconLabelButton] $label tapped');
-        onTap();
-      },
-      // [2] Icon Label Button
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        decoration: BoxDecoration(
-          color: bgColor,
-          border: Border.all(color: borderColor, width: 1.5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: textColor, size: 22),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // debugPrint('[IconLabelButton] $label tapped');
+          onTap();
+        },
+        // [2] Icon Label Button with proper constraints
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: minWidth ?? 120,
+            maxWidth: maxWidth ?? 200,
+            minHeight: 44, // Ensure minimum touch target
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              border: Border.all(color: borderColor, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // maybe the icon doesn't look good, i'll decide later
+                // Icon(icon, color: textColor, size: 22),
+                // const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
