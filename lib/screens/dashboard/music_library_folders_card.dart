@@ -128,49 +128,51 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                                 final normalizedPath = normalizePath(folderProvider.musicFolders[i].path);
                                 final displayPath = Platform.isAndroid
                                     ? normalizedPath.replaceFirst(
-                                        'internal memory/',
-                                        'Internal Memory/',
+                                        AppConstants.androidInternalStorage,
+                                        AppConstants.androidInternalStorageDisplay,
                                       )
                                     : normalizedPath;
-                                return Text(
-                                  displayPath,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                    fontSize: 12,
+                                return FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    displayPath,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 );
                               },
                             ),
 
                             // [1.4.1.2.3] (Optional) Invalid Folder Warning
                             // Uncomment and implement if folder status checking is enabled.
-                            if (folderProvider.musicFolders[i].status == FolderStatus.invalid)
-                              Container(
-                                margin: const EdgeInsets.only(top: 8),
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.errorRed.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.3), width: 1),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.error_outline_rounded, size: 16, color: AppColors.errorRed),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'This folder does not contain any audio files',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: AppColors.errorRed,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            // if (folderProvider.musicFolders[i].status == FolderStatus.invalid)
+                            //   Container(
+                            //     margin: const EdgeInsets.only(top: 8),
+                            //     padding: const EdgeInsets.all(8),
+                            //     decoration: BoxDecoration(
+                            //       color: AppColors.errorRed.withValues(alpha: 0.1),
+                            //       borderRadius: BorderRadius.circular(6),
+                            //       border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.3), width: 1),
+                            //     ),
+                            //     child: Row(
+                            //       children: [
+                            //         Icon(Icons.error_outline_rounded, size: 16, color: AppColors.errorRed),
+                            //         const SizedBox(width: 8),
+                            //         Text(
+                            //           'This folder does not contain any audio files',
+                            //           style: theme.textTheme.bodySmall?.copyWith(
+                            //             color: AppColors.errorRed,
+                            //             fontWeight: FontWeight.w500,
+                            //           ),
+                            //           maxLines: 2,
+                            //           overflow: TextOverflow.ellipsis,
+                            //         ),
+                            //       ],
+                            //     ),
+                            //   ),
                           ],
                         ),
                       ),

@@ -384,7 +384,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                             // [4.2] Google Drive
                             Expanded(
                               child: IconLabelButton(
-                                icon: Icons.cloud,
+                                icon: Iconsax.cloud,
                                 label: 'Google Drive',
                                 selected: _selectedSyncMethod == 1,
                                 onTap: () {

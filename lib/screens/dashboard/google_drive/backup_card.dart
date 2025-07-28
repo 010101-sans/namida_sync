@@ -39,7 +39,7 @@ class _GoogleDriveBackupCardState extends State<GoogleDriveBackupCard> {
 
         // [1] Main Card
         return CustomCard(
-          leadingIcon: Iconsax.cloud,
+          leadingIcon: Iconsax.export_1,
           title: 'Google Drive Backup',
           iconColor: primaryColor,
           body: Padding(

@@ -50,23 +50,9 @@ class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with Ti
         // Only show incoming transfer messages if we're receiving
         final showIncomingTransfer = incomingDevice != null && provider.isReceiving && !provider.isSending;
         
-        // Determine status color and icon
-        // Color statusColor = Colors.grey;
-        // IconData statusIcon = Iconsax.receive_square;
-        
-        // if (provider.isReceiving) {
-        //   statusColor = Colors.orange;
-        //   statusIcon = Iconsax.clock;
-        // } else if (provider.isServerRunning) {
-        //   statusColor = AppColors.successGreen;
-        //   statusIcon = Iconsax.tick_circle;
-        // } else {
-        //   statusColor = Colors.red;
-        //   statusIcon = Iconsax.close_circle;
-        // }
-        
         return CustomCard(
-          leadingIcon: Iconsax.receive_square,
+          leadingIcon: Iconsax.import_2
+          ,
           title: 'Receive Backup',
           iconColor: colorScheme.primary,
           statusWidget: AnimatedBuilder(
@@ -99,18 +85,19 @@ class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with Ti
                 // [1] Server Status Section
                 provider.isServerRunning
                     ? StatusMessage.success(
+                        icon: Icons.wifi,
                         title: 'Listening for incoming transfers',
                         subtitle: 'Ready to receive backups',
                       )
                     : StatusMessage.error(
+                        icon: Icons.wifi,
                         title: 'Not listening',
                         subtitle: 'Start the server for incoming transfers',
                       ),
-                
                 const SizedBox(height: 16),
                 
                 // [1.5] Receive Status Section
-                if ((provider.isReceiving || provider.progress == 1.0)) ...[
+                if (provider.isReceiving && !provider.isSending) ...[
                   Container(
                     decoration: BoxDecoration(
                       color: colorScheme.surface.withValues(alpha: 0.06),
@@ -157,25 +144,13 @@ class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with Ti
                               Icon(Iconsax.folder, color: colorScheme.primary, size: 18),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Row(
-                                  children: [
-                                    Text(
+                                child: Text(
                                       'Music Folders',
                                       style: theme.textTheme.bodySmall?.copyWith(
                                         color: theme.colorScheme.outline,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Divider(
-                                        indent: 15,
-                                        thickness: 1,
-                                        color: Colors.grey.withValues(alpha: 0.5),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
                               buildLocalTransferStatusLabel(
                                 context,
@@ -371,12 +346,14 @@ class _LocalRecieveBackupCardState extends State<LocalRecieveBackupCard> with Ti
                     subtitle: provider.error!,
                   ),
                 
-                // [5] Success Message - Only show when receiving
-                if (!provider.isReceiving && !provider.isSending && provider.progress == 1.0 && provider.error == null)
+                // [5] Success Message - Only show when receiving is complete
+                if (!provider.isReceiving && !provider.isSending && provider.progress == 1.0 && provider.error == null && provider.currentSession?.senderAlias != null) ...[
+                  const SizedBox(height: 10),
                   StatusMessage.success(
                     title: 'Backup received and restored successfully!',
                     subtitle: 'Your backup and music files have been restored to your device',
                   ),
+                ],
                 
                 const SizedBox(height: 10),
               ],
