@@ -93,7 +93,6 @@ class StatusMessage extends StatelessWidget {
       subtitleColor: color,
     );
   }
-
   factory StatusMessage.loading({
     String? title,
     String? subtitle,
@@ -102,10 +101,10 @@ class StatusMessage extends StatelessWidget {
       icon: Iconsax.refresh,
       title: title,
       subtitle: subtitle,
-      backgroundColor: AppColors.accentPurple.withValues(alpha: 0.05),
-      iconColor: AppColors.accentPurple,
-      titleColor: AppColors.accentPurple,
-      subtitleColor: AppColors.accentPurple,
+      backgroundColor: Colors.blue.withValues(alpha: 0.05),
+      iconColor: Colors.blue,
+      titleColor: Colors.blue,
+      subtitleColor: Colors.blue,
     );
   }
 

@@ -57,7 +57,7 @@ class AppConstants {
   
   // Platform-specific paths
   static const String androidInternalStorage = '/storage/emulated/0/';
-  static const String androidInternalStorageDisplay = 'Internal Memory/';
+  static const String androidInternalStorageDisplay = '/Internal Memory/';
   
   // Method Channel Names
   static const String intentMethodChannel = 'com.sanskar.namidasync/intent';
