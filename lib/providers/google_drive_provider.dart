@@ -41,6 +41,15 @@ class GoogleDriveProvider extends ChangeNotifier {
 
   GoogleDriveProvider(this.driveService);
 
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  // Helper method to check if provider is disposed
+  bool get isDisposed => _disposed;
+
   // [2] Request cancellation of an ongoing backup operation.
   void requestCancelBackup() {
     // debugPrint('[GoogleDriveProvider] Backup cancellation requested.');
@@ -649,14 +658,6 @@ class GoogleDriveProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    // debugPrint('[GoogleDriveProvider] Disposing provider.');
-    _disposed = true;
-    super.dispose();
-  }
-
-  @protected
   @override
   void notifyListeners() {
     if (!_disposed) {

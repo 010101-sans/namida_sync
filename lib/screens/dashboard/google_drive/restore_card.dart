@@ -129,7 +129,7 @@ class _GoogleDriveRestoreCardState extends State<GoogleDriveRestoreCard> {
           children: [
             // [1.1] Main Card
             CustomCard(
-              leadingIcon: Iconsax.cloud,
+              leadingIcon: Iconsax.import_1,
               title: 'Google Drive Restore',
               iconColor: primaryColor,
               body: Padding(

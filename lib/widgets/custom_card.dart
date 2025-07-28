@@ -104,7 +104,7 @@ class CustomCard extends StatelessWidget {
                         theme.textTheme.displayLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
-                          fontSize: 18.0,
+                          fontSize: 16.0,
                         ),
                   ),
                 ),
@@ -114,8 +114,9 @@ class CustomCard extends StatelessWidget {
                   children: [
                     if (headerActions != null) ...headerActions!,
                     if (statusWidget != null) ...[
-                      const SizedBox(width: 8),
+                      // const SizedBox(width: 10),
                       statusWidget!,
+                      const SizedBox(width: 12),
                     ] else if (statusIcon != null) ...[
                       const SizedBox(width: 8),
                       Container(

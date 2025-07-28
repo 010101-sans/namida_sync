@@ -39,15 +39,18 @@ class AboutScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('About')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          double containerWidth = double.infinity;
-          if (Platform.isWindows) {
+          // Use responsive width calculation instead of fixed values
+          double containerWidth = constraints.maxWidth;
+          if (Platform.isWindows && constraints.maxWidth > 600) {
             containerWidth = 500;
-          } else if (Platform.isAndroid) {
-            containerWidth = double.infinity;
           }
+          
           return Center(
-            child: SizedBox(
-              width: containerWidth,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: containerWidth,
+                minWidth: 300, // Ensure minimum readable width
+              ),
               child: ScrollConfiguration(
                 behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
                 child: ListView(

@@ -20,6 +20,10 @@ Welcome to the documentation for Namida Sync! Here you'll find detailed guides, 
     - How to run, write, and extend tests for Namida Sync.
 - [SECRETS.md](SECRETS.md) : 
     - How to set up secrets for local development and what to never commit.
+- [INTENT_BASED_CONFIG_PASSING.md](INTENT_BASED_CONFIG_PASSING.md) : 
+    - Implementation details for Intnet passing from Namida to Namida Sync.
+- [LOCAL_NETWORK_TRANSFER.md](LOCAL_NETWORK_TRANSFER.md) :
+    - Implementation details for Local Network Transfer (LAN, Wifi, pear-to-pear)
 - [RELEASE.md](RELEASE.md) : 
     - Release process for Android/Windows, including building, versioning, and publishing.
 - [FAQ.md](FAQ.md) : 

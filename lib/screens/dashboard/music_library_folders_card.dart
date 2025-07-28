@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../providers/providers.dart';
+import '../../utils/utils.dart';
 import '../../widgets/custom_card.dart';
-import '../../utils/ui_constants.dart';
 
 // Displays the list of user-selected music library folders, with options to add, remove, and refresh.
 class MusicLibraryFoldersCard extends StatelessWidget {
@@ -122,25 +122,24 @@ class MusicLibraryFoldersCard extends StatelessWidget {
                             const SizedBox(height: 4),
 
                             // [1.4.1.2.2] Folder Path (Platform-specific formatting)
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final path = Platform.isAndroid
-                                    ? folderProvider.musicFolders[i].path.replaceFirst(
-                                        '/storage/emulated/0/',
-                                        'Internal Memory/',
+                            Builder(
+                              builder: (context) {
+                                final normalizedPath = normalizePath(folderProvider.musicFolders[i].path);
+                                final displayPath = Platform.isAndroid
+                                    ? normalizedPath.replaceFirst(
+                                        AppConstants.androidInternalStorage,
+                                        AppConstants.androidInternalStorageDisplay,
                                       )
-                                    : folderProvider.musicFolders[i].path;
+                                    : normalizedPath;
                                 return FittedBox(
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    path,
+                                    displayPath,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: colorScheme.onSurface.withValues(alpha: 0.7),
                                       fontSize: 12,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 );
                               },
