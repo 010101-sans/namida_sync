@@ -12,6 +12,8 @@ Welcome to the documentation for Namida Sync! Here you'll find detailed guides, 
     - Detailed explanation of backup and music folder logic, including manifest structure.
 - [GOOGLE_DRIVE_INTEGRATION.md](GOOGLE_DRIVE_INTEGRATION.md) : 
     - Technical details on Google Drive API integration and authentication.
+- [LOCAL_NETWORK_TRANSFER.md](LOCAL_NETWORK_TRANSFER.md) :
+    - Comprehensive guide to local network transfer feature, including device discovery, peer-to-peer file sharing, and technical implementation details.
 - [NAMIDA_ABOUT_PAGE_UI.md](NAMIDA_ABOUT_PAGE_UI.md) : 
     - UI/UX and theming reference, inspired by Namida's About page.
 - [PLATFORM_PATHS_RESOLUTION.md](PLATFORM_PATHS_RESOLUTION.md) : 
@@ -21,9 +23,7 @@ Welcome to the documentation for Namida Sync! Here you'll find detailed guides, 
 - [SECRETS.md](SECRETS.md) : 
     - How to set up secrets for local development and what to never commit.
 - [INTENT_BASED_CONFIG_PASSING.md](INTENT_BASED_CONFIG_PASSING.md) : 
-    - Implementation details for Intnet passing from Namida to Namida Sync.
-- [LOCAL_NETWORK_TRANSFER.md](LOCAL_NETWORK_TRANSFER.md) :
-    - Implementation details for Local Network Transfer (LAN, Wifi, pear-to-pear)
+    - Implementation details for Intent passing from Namida to Namida Sync.
 - [RELEASE.md](RELEASE.md) : 
     - Release process for Android/Windows, including building, versioning, and publishing.
 - [FAQ.md](FAQ.md) : 

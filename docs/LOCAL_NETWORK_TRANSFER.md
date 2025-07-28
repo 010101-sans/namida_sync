@@ -2,7 +2,18 @@
 
 ## Overview
 
-The Local Network Transfer feature in Namida Sync enables users to transfer backup files and music libraries between devices on the same local network (LAN or Wi-Fi). This feature uses a combination of UDP multicast for device discovery and HTTP for file transfer operations, an [LocalSend](https://github.com/localsend/localsend), but tailored for Namida Sync's backup/restore needs.
+The Local Network Transfer feature in Namida Sync enables users to transfer backup files and music libraries between devices on the same local network (LAN or Wi-Fi). This feature uses a combination of UDP multicast for device discovery and HTTP for file transfer operations, inspired by [LocalSend](https://github.com/localsend/localsend), but tailored for Namida Sync's backup/restore needs.
+
+## Features
+
+- **Device Discovery**: Automatic discovery of other Namida Sync devices on the local network
+- **Peer-to-Peer Transfer**: Direct file transfer between devices without cloud storage
+- **User Approval**: Required confirmation before accepting incoming transfers
+- **Progress Tracking**: Real-time progress updates during file transfers
+- **Cross-Platform**: Works between Android and Windows devices
+- **Folder Structure Preservation**: Maintains music folder hierarchy during transfer
+- **Duplicate Handling**: Skips existing files to avoid unnecessary transfers
+- **Error Recovery**: Graceful handling of network interruptions and failures
 
 ## Glossary
 
@@ -27,8 +38,8 @@ The Local Network Transfer feature in Namida Sync enables users to transfer back
 - **Server**: HTTP server running on each device to handle file transfers
 - **Provider**: Component that handles callbacks and user interactions during transfers
 - **Temp Directory**: Temporary storage location for received files before restoration:
-  - Windows: C:/NamidaSync
-  - Android: /storage/emulated/0/NamidaSync
+  - Windows: `C:/NamidaSync`
+  - Android: `/storage/emulated/0/NamidaSync`
   - Other: System temp directory/NamidaSync
 
 ### Transfer Process Terms
@@ -84,16 +95,20 @@ lib/
 |       local_network_provider.dart          # State management                                             
 |
 +---models
-|       transfer_manifest.dart               # Transfer manifest structure                                              
-|       transfer_session.dart                # Session management                                               
+|       local_network_transfer/
+|           local_network_models.dart        # Device and session models
+|           transfer_manifest.dart           # Transfer manifest structure
 |                                                       
 +---screens
     |                                                       
-    \---local_transfer                                              
-            local_transfer_page.dart         # Main page container                                                
-            local_setup_card.dart            # Server setup and configuration                                               
-            local_send_backup_card.dart      # Send backup to other devices                                             
-            local_recieve_backup_card.dart   # Receive backup from other devices                                              
+    \---dashboard
+        \---local_transfer                                               
+                local_transfer_page.dart         # Main page container                                                 
+                local_setup_card.dart            # Server setup and configuration                                               
+                local_send_backup_card.dart      # Send backup to other devices                                             
+                local_recieve_backup_card.dart   # Receive backup from other devices
++---utils
+        local_transfer_utils.dart               # UI utilities and status helpers
 ```
 
 ## Data Models
@@ -248,9 +263,15 @@ class LocalNetworkSession {
   - **Note** : On Windows, if device discovery isn't working, try disabling virtual network adapters (like VirtualBox Host-Only Network) in Device Manager, as they can interfere with UDP multicast discovery
 - **Android** : Full support (tested)
 
+## Dependencies
+- `udp: ^5.0.3` - For UDP multicast communication
+- `multicast_dns: ^0.3.0` - For device discovery
+- `uuid: ^4.5.1` - For device identification
+- `http` - For HTTP server and client operations
+
 ## Future (possible) Enhancements
-- [] Resume/interrupt transfers
-- [] Batch/multi-device transfers
-- [] Compression/encryption
-- [] WebRTC for direct P2P
-- [] Transfer history/log
+- [ ] Resume/interrupt transfers
+- [ ] Batch/multi-device transfers
+- [ ] Compression/encryption
+- [ ] WebRTC for direct P2P
+- [ ] Transfer history/log
