@@ -9,6 +9,7 @@ A seamless backup and restore companion app for the [Namida Music & Video Player
 - [Features](#features)
 - [Getting Started](#getting-started)
 - [How Namida Sync Works](#how-namida-sync-works)
+- [Sync Methods](#sync-methods)
 - [Installation](#installation)
 - [Documentation](#documentation)
 - [Special Thanks](#special-thanks)
@@ -18,27 +19,14 @@ A seamless backup and restore companion app for the [Namida Music & Video Player
 
 ## Features
 
-- **One-tap backup & restore** for your Namida player data and music library.
-- Reliable, incremental sync and skips duplicates, handles large music libraries.
-- Secure Google Drive integration.
-- Auto-detects latest backup and music folders.
-- **Cross-device Syncing :**
-
-    ```
-    +-------------+         +-------------+
-    |             |         |             |
-    |  Android 1  |<------->|  Android 2  |
-    |             |         |             |
-    +-------------+         +-------------+
-           ↑                       ↑           
-           |                       |           
-           ↓                       ↓          
-    +-------------+         +-------------+
-    |             |         |             |
-    |  Windows 1  |<------->|  Windows 2  |
-    |             |         |             |
-    +-------------+         +-------------+
-    ```
+- **One-tap backup & restore** for your Namida player data and music library
+- **Two powerful sync methods** to fit your needs:
+  - **Google Drive Sync** - Cloud-based backup with automatic sync
+  - **Local Network Transfer** - Peer-to-peer sharing without internet
+- **Smart file handling** - Incremental sync, skips duplicates, handles large libraries
+- **Cross-platform compatibility** - Works seamlessly between Android and Windows
+- **Auto-detection** - Finds your latest backup and music folders automatically
+- **Folder structure preservation** - Maintains your music organization during transfers
 
 ## Getting Started
 
@@ -46,23 +34,20 @@ A seamless backup and restore companion app for the [Namida Music & Video Player
 - Create a backup zip file in the Namida app by using its built-in backup feature to generate a backup zip file. Be mindful with what you include while creating the backup.  
 - Make sure Namida Sync shows the correct Namida backup and music folder paths. If not, pick them manually.
 
-### 2. Back Up Your Namida Environment to Google Drive
-- Tap **Sign in with Google** (if you haven’t already).
-- Tap the **Backup** button. Namida Sync will upload your Namida backup zip and music files to Google Drive.
+### 2. Choose Your Sync Method
+- **For cloud backup**: Use Google Drive sync
+- **For local sharing**: Use Local Network Transfer
 
-### 3. Restore Your Data
-- Tap **Restore** to download your backup zip and music files from Google Drive.
-- If asked, choose where to save your restored folder, you will get two choices :
-    - Pick an existing location of the currently restoring music folder if it already exists on your device.
-    - Pick a parent folder on your device to restore the currently restoring music folder, as a subfolder inside it.
-- After the restore finishes, open the Namida app : 
-    - Use its restore/import feature to load your backup zip file.
-    - Make sure that the restored music folder is listed in Namida's included paths list.
-- Note : 
-    - Restoring the backup zip file can overwrite the paths for backup and included music folder, if you restore "settings" as well then you'll need to overwrite the backup and music folder paths.
-    - So restore settings only for the first time. That's why, again, be mindful with what you include in the backup zip file.
+### 3. Back Up Your Namida Environment
+- **Google Drive**: Tap **Sign in with Google** and then **Backup**
+- **Local Network**: Start the server and send to another device
 
-## How Namida Sync works?
+### 4. Restore Your Data
+- **Google Drive**: Tap **Restore** to download from cloud
+- **Local Network**: Accept incoming transfers from other devices
+- After restore, open Namida app and import your backup zip file
+
+## How Namida Sync Works?
 
 ### 1. Folder Detection & Validation
 - **Auto-detects** default folders :
@@ -74,40 +59,119 @@ A seamless backup and restore companion app for the [Namida Music & Video Player
 - **Custom folders :** Easily select your own backup and music folders using the built-in folder picker functionality.
 - **Validation :** Checks for backup zip and music files before syncing.
 
-### 2.Google Drive Integration
+### 2. Backup & Restore Workflow
 
-- **Sign in :** Firebase Authentication.
-- **[Drive API](https://developers.google.com/workspace/drive/api/guides/about-sdk) :** Uploads/downloads files and manages folders.
-- **Structure :** All data goes inside `NamidaSync/` on your Google Drive.
-  - `NamidaSync/MusicLibrary/` : Stores your music files, preserving folder structure.
-  - `NamidaSync/Backups/` : Stores your Namida backup zip files.
-  - `NamidaSync/Manifests/` : Stores manifest json files for each backup .
-
-### 3. Backup & Restore Workflow
-
-- **Backup :**
+- **Backup Process :**
   1. Finds your latest backup zip and music folders on your device.
-  2. Uploads backup zip to `NamidaSync/Backups/`.
-  3. Uploads music files to `NamidaSync/MusicLibrary/` (preserves nested-folder structure).
-  4. Generates and uploads a manifest.
+  2. Creates a manifest with file metadata and structure.
+  3. Transfers files using your chosen sync method.
+  4. Preserves folder hierarchy and handles duplicates.
 
-- **Restore :**
+- **Restore Process :**
   1. Downloads and reads the manifest.
   2. Checks platform compatibility (Android-Android, Windows-Windows and Android-Windows).
   3. Restores backup zip and music folders (asks for location if needed).
   4. Downloads files, shows progress, skips duplicates, handles errors.
 
-### 4. Workflow illustration (It all began with this sketch)
+## Sync Methods
 
-![namida_sync_working](assets/images/help/namida_sync_working.png)
+### Google Drive Sync
+
+**Perfect for:** Cloud backup and cross-device access
+
+#### Features
+- **Cloud Storage**: Secure backup to Google Drive
+- **Automatic Sync**: One-tap backup and restore
+- **Cross-Device Access**: Access your backups from anywhere
+- **Version History**: Keep multiple backup versions
+- **Internet Required**: Works with stable internet connection
+
+#### How It Works
+1. **Authentication**: Sign in with your Google account
+2. **Upload**: Backup zip and music files uploaded to `NamidaSync/` folder
+3. **Manifest**: JSON file tracks all transferred files and metadata
+4. **Download**: Restore downloads files and restores to your device
+
+#### Structure on Google Drive
+```
+NamidaSync/
+├── MusicLibrary/     # Your music files with folder structure
+├── Backups/          # Namida backup zip files
+└── Manifests/        # Transfer metadata and file lists
+```
+
+### Local Network Transfer
+
+**Perfect for:** Fast local sharing, offline transfers, large libraries
+
+#### Features
+- **Peer-to-Peer**: Direct device-to-device transfer
+- **No Internet Required**: Works on local network only
+- **High Speed**: Much faster than cloud upload/download
+- **User Approval**: Accept/decline incoming transfers
+- **Real-time Progress**: Live transfer status updates
+
+#### How It Works
+1. **Device Discovery**: Uses UDP multicast to find other devices
+2. **Server Setup**: Each device runs a local HTTP server
+3. **File Transfer**: Direct HTTP transfer between devices
+4. **Automatic Restore**: Files restored to configured folders
+
+#### Technical Details
+- **Port**: 53317
+- **Protocol**: UDP for discovery, HTTP for transfer
+- **Security**: Local network only, user approval required
+- **Temp Storage**: Platform-specific temporary directories
+
+#### Getting Started with Local Network Transfer
+
+**Setting Up the Server**
+1. Go to the **Local Transfer** section in Namida Sync
+2. Enter a device alias (e.g., "My Phone", "Work PC")
+3. Tap **Start Server** to begin listening for incoming transfers
+4. Your device will now be discoverable by other Namida Sync devices
+
+**Sending a Backup**
+1. Make sure the target device has its server running
+2. Tap **Refresh Devices** to discover available devices
+3. Select the target device from the list
+4. Tap **Send Backup** to transfer your backup zip and music files
+5. The target device will be prompted to accept the transfer
+
+**Receiving a Backup**
+1. Keep your server running to receive transfers
+2. When a transfer arrives, you'll see a notification
+3. Review the transfer details and tap **Accept** or **Decline**
+4. If accepted, files will be downloaded and automatically restored
+
+#### Troubleshooting
+- **No devices found?** Ensure both devices are on the same network and servers are running.
+- **Transfer fails?** Check firewall settings and ensure port 53317 is allowed
+- **Windows discovery issues?** Try disabling virtual network adapters in Device Manager and adding an inbound firewall rule for port 53317 (for both, TCP and UDP)
+
+For detailed technical information, see [Local Network Transfer Documentation](docs/LOCAL_NETWORK_TRANSFER.md).
 
 ## Pro Tips
 
-- **Music Liberary Folder Structure :** Put all your music folders into a single parent folder and sync that parent folder only, for easier backup and restore.
-- **Before restoring on a new device or after a reset :** Make sure your latest backup is on Drive.
-- **Android permission issues?** Try re-picking folders and granting permissions again in app settings.
-- **Backup/Restore issues?** Try signing out of your Google account, then sign back in.
-- **Large music library?** Use a stable internet connection. If a backup/restore is interrupted, don’t worry, Namida Sync skips duplicates on next backup/restore.
+### General Tips
+- **Music Library Structure**: Put all your music folders into a single parent folder for easier backup and restore
+- **Before restoring on a new device**: Make sure your latest backup is available via your chosen sync method
+- **Large music libraries**: Local network transfer is often faster than cloud sync for large libraries
+
+### Google Drive Tips
+- **Stable connection**: Use a reliable internet connection for cloud backups
+- **Storage space**: Check your Google Drive storage before large backups
+- **Authentication issues**: Try signing out and back in if you encounter problems
+
+### Local Network Tips
+- **Network stability**: Ensure both devices have stable network connections
+- **Firewall settings**: Allow Namida Sync through your firewall
+- **Device naming**: Use descriptive device aliases for easier identification
+
+### Troubleshooting
+- **Android permission issues?** Try re-picking folders and granting permissions again in app settings
+- **Backup/Restore issues?** Try signing out of your Google account, then sign back in
+- **Interrupted transfers?** Don't worry, Namida Sync skips duplicates on next backup/restore
 
 ## Installation
 
@@ -120,10 +184,7 @@ See the [Releases page](https://github.com/010101-sans/namida_sync/releases) for
 - **Windows :**  
   - [Download the Windows ZIP file](https://github.com/010101-sans/namida_sync/releases/download/v1.0.0/NamidaSync-Windows-v1.0.0.zip), extract it to a folder of your choice, and then run `namida_sync.exe` inside the extracted folder.
 
-
-
 #### **⭐️ Star this repo if you liked Namida Sync**  
-
 
 ## Documentation
 
