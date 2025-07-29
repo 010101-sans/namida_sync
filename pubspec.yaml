@@ -63,9 +63,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   
-  inno_bundle:
-    git:
-      url: https://github.com/MSOB7YY/inno_bundle
+  inno_bundle: ^0.9.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -145,7 +143,5 @@ flutter_icons:
   image_path: "assets/images/about/namida_sync_logo.png"
 
 inno_bundle:
-  id: 91b58590-ec2c-439a-9b9f-91d39af373e9
+  id: d21c1ce0-6cba-11f0-a81c-636b9b4285de
   publisher: 010101-sans
-  installer_icon: windows/runner/resources/app_icon.ico
-  updates_url: https://github.com/010101-sans/namida_sync/releases
