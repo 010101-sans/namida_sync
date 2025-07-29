@@ -108,6 +108,9 @@ flutter build windows --release
 ```sh
 dart run inno_bundle:build --release
 ```
+```sh
+"C:\Users\Lenovo\AppData\Local\Programs\Inno Setup 6\ISCC.exe" "build\windows\x64\installer\Release\inno-script.iss"
+```
 - **Prerequisites:** Inno Setup 6 must be installed on your system
 - **Install Inno Setup:** `winget install JRSoftware.InnoSetup`
 - Output: `build/windows/x64/installer/Release/namida_sync_setup.exe`
