@@ -97,7 +97,6 @@ flutter build appbundle --release
 #### a. Build Windows release
 ```sh
 flutter build windows --release
-
 ```
 - Output folder: `build/windows/runner/Release/`
 - The folder contains:
@@ -105,12 +104,28 @@ flutter build windows --release
   - All required `.dll` files (e.g., `flutter_windows.dll`, `vcruntime140.dll`, `msvcp140.dll`, etc.)
   - The `data/` directory
 
-#### b. Package Windows build
-- **Important:** Distribute the entire contents of the `Release` folder, not just the `.exe`.
-- To create a zip for distribution:
+#### b. Create Windows Installer
+```sh
+dart run inno_bundle:build --release
+```
+- **Prerequisites:** Inno Setup 6 must be installed on your system
+- **Install Inno Setup:** `winget install JRSoftware.InnoSetup`
+- Output: `build/windows/x64/installer/Release/namida_sync_setup.exe`
+- **Distribution:** Upload the `.exe` file directly - no zipping required
+- The installer will:
+  - Install Namida Sync as a proper Windows application
+  - Create Start Menu shortcuts
+  - Allow easy uninstallation via Control Panel
+  - Install to `C:\Program Files\Namida Sync` by default
+  - Automatically detect the installation location for better integration
+
+#### c. Package Windows build (Legacy - Portable)
+- **Note:** This method creates a portable version. For better user experience, use the installer above.
+- **Important:** Portable builds require zipping because they contain multiple files (`.exe`, `.dll` files, `data/` folder)
+- To create a zip for distribution (optional):
   ```sh
   cd build/windows/runner/
-  zip -r NamidaSync-Windows-vX.Y.Z.zip Release/
+  zip -r NamidaSync-Windows-Portable-vX.Y.Z.zip Release/
   ```
 - Replace `vX.Y.Z` with your version number.
 
@@ -132,7 +147,8 @@ git push origin v1.0.0
   - `app-release.apk` (universal APK)
   - Split APKs (if desired)
   - `app-release.aab` (if publishing to Play Store)
-  - `NamidaSync-Windows-vX.Y.Z.zip` (zipped Windows build)
+  - `namida_sync_setup.exe` (Windows installer - recommended)
+  - `NamidaSync-Windows-Portable-vX.Y.Z.zip` (portable Windows build - optional)
   - Any generated `.sha1` checksum files for your release assets (optional but recommended for integrity verification).  
   - If present, upload the `.sha1` files alongside their corresponding assets so users can verify downloads.
 6. Publish the release.
@@ -151,7 +167,9 @@ git push origin v1.0.0
 
 ## 5. Troubleshooting & Tips
 
-- **Windows:** If users report missing DLL errors (e.g., `flutter_windows.dll`, `vcruntime140.dll`), ensure they extract and run the `.exe` from inside the zipped `Release` folder. See [Flutter Windows Build Docs](https://docs.flutter.dev/platform-integration/windows/building).
+- **Windows Installer:** The installer automatically handles all dependencies and installs Namida Sync as a proper Windows application. Users can uninstall via Control Panel.
+- **Windows Portable:** If users report missing DLL errors (e.g., `flutter_windows.dll`, `vcruntime140.dll`), ensure they extract and run the `.exe` from inside the zipped `Release` folder. See [Flutter Windows Build Docs](https://docs.flutter.dev/platform-integration/windows/building).
+- **Inno Setup Issues:** If the installer build fails, ensure Inno Setup 6 is installed: `winget install JRSoftware.InnoSetup`
 - **Android:** For Play Store, always use the `.aab` file. For direct installs, use the universal APK or provide split APKs.
 - **Zipping:** Use `zip -r` to recursively zip the entire folder. Example: `zip -r Release.zip Release/` ([reference](https://themightymo.com/how-to-zip-a-folder-using-terminal-or-command-line/)).
 - **Tagging:** Always tag releases in git for traceability.

@@ -69,6 +69,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  inno_bundle: ^0.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -139,3 +140,20 @@ flutter:
 flutter_icons:
   android: true
   image_path: "assets/images/about/namida_sync_logo.png"
+
+inno_bundle:
+  id: "30715a0c-4b58-47ac-a21f-b7b0f317c5f0"
+  app_name: "Namida Sync"
+  app_version: "1.2.0"
+  publisher: "Sanskar"
+  app_publisher: "Sanskar" 
+  app_publisher_url: "https://github.com/010101-sans/namida_sync"
+  app_support_url: "https://github.com/010101-sans/namida_sync/issues"
+  app_updates_url: "https://github.com/010101-sans/namida_sync/releases"
+  default_dir_name: "{autopf}\\Namida Sync"
+  default_group_name: "Namida Sync"
+  output_dir: "build\\windows\\x64\\installer\\Release"
+  output_base_filename: "namida_sync_setup"
+  uninstall_display_name: "Namida Sync"
+  setup_icon_file: "assets/images/about/namida_sync_logo.png"
+  setup_icon: "assets/images/about/namida_sync_logo.png"
