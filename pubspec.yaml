@@ -142,18 +142,5 @@ flutter_icons:
   image_path: "assets/images/about/namida_sync_logo.png"
 
 inno_bundle:
-  id: "30715a0c-4b58-47ac-a21f-b7b0f317c5f0"
-  app_name: "Namida Sync"
-  app_version: "1.2.0"
-  publisher: "Sanskar"
-  app_publisher: "Sanskar" 
-  app_publisher_url: "https://github.com/010101-sans/namida_sync"
-  app_support_url: "https://github.com/010101-sans/namida_sync/issues"
-  app_updates_url: "https://github.com/010101-sans/namida_sync/releases"
-  default_dir_name: "{autopf}\\Namida Sync"
-  default_group_name: "Namida Sync"
-  output_dir: "build\\windows\\x64\\installer\\Release"
-  output_base_filename: "namida_sync_setup"
-  uninstall_display_name: "Namida Sync"
-  setup_icon_file: "assets/images/about/namida_sync_logo.png"
-  setup_icon: "assets/images/about/namida_sync_logo.png"
+  id: d21c1ce0-6cba-11f0-a81c-636b9b4285de
+  publisher: 010101-sans
