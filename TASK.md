@@ -1,0 +1,2 @@
+- [] Issue #2: Linux Support
+- [] Issue #3: Storage location is fixed

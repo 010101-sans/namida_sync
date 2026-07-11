@@ -17,7 +17,7 @@ void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   // debugPrint('[main] Flutter bindings initialized.');
 
-  // [2] Initialize Firebase with platform-specific options before running the app.
+  // [2] Initialize Firebase with platform-specific options before running the app. 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // debugPrint('[main] Firebase initialized.');
 
