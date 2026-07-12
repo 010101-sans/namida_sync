@@ -41,7 +41,7 @@ class AboutScreen extends StatelessWidget {
         builder: (context, constraints) {
           // Use responsive width calculation instead of fixed values
           double containerWidth = constraints.maxWidth;
-          if (Platform.isWindows && constraints.maxWidth > 600) {
+          if ((Platform.isWindows || Platform.isLinux || Platform.isMacOS) && constraints.maxWidth > 600) {
             containerWidth = 500;
           }
           
