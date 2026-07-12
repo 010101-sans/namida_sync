@@ -95,9 +95,9 @@ A seamless backup and restore companion app for the [Namida Music & Video Player
 #### Structure on Google Drive
 ```
 NamidaSync/
-├── MusicLibrary/     # Your music files with folder structure
-├── Backups/          # Namida backup zip files
-└── Manifests/        # Transfer metadata and file lists
+|--- MusicLibrary/     # Your music files with folder structure
+|--- Backups/          # Namida backup zip files
+|--- Manifests/        # Transfer metadata and file lists
 ```
 
 ### Local Network Transfer
@@ -182,7 +182,7 @@ See the [Releases page](https://github.com/010101-sans/namida_sync/releases) for
   - If you know your device's architecture, you can download a specific APK from the [Releases page](https://github.com/010101-sans/namida_sync/releases).
 
 - **Windows :**  
-  - [Download the Windows ZIP file](https://github.com/010101-sans/namida_sync/releases/download/v1.0.0/NamidaSync-Windows-v1.0.0.zip), extract it to a folder of your choice, and then run `namida_sync.exe` inside the extracted folder.
+  - [Download Windows EXE installer](https://github.com/010101-sans/namida_sync/releases/download/v1.2.0/NamidaSync-v1.0.2-Installer.exe), run it and follow on-screen instruction.
 
 #### **⭐️ Star this repo if you liked Namida Sync**  
 
