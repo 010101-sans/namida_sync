@@ -1,16 +1,14 @@
-# Parrot OS GUI (WSL2) & Flutter Workflow
+# Parrot OS GUI (WSL2) & Flutter Development Workflow
 
 This guide serves as a comprehensive reference for setting up a fully functional graphical environment for Parrot OS under WSL2, along with a seamless Windows-to-Linux development pipeline for compiling and packaging Flutter applications into AppImages.
 
-
-
 ## Phase 1: Setting up Parrot OS GUI in WSL2
 
-This section outlines the process for installing Parrot OS in WSL2 and running a full graphical user interface (GUI) via XRDP, including specific fixes for Windows 11/WSLg conflicts[cite: 1].
+This section outlines the process for installing Parrot OS in WSL2 and running a full graphical user interface (GUI) via XRDP, including specific fixes for Windows 11/WSLg conflicts.
 
 ### 1. Installation and Import
-1. Download the **WSL** version of Parrot OS from offical site.
-2. Double-click the `.wsl` file extracted from downloaded file.
+1. Download the **WSL** version of Parrot OS from the official site.
+2. Double-click the `.wsl` file extracted from the downloaded file.
 
 ### 2. Systemd and User Setup
 
@@ -18,19 +16,40 @@ WSL defaults to the root user and traditionally does not boot background service
 
 1. Create a standard user:
 
-
 ```bash
 useradd -m -s /bin/bash newusername
 passwd newusername
 usermod -aG sudo newusername
 ```
 
-
 2. Enable `systemd` and set the default user:
 
+```bash
+sudo tee /etc/wsl.conf > /dev/null <<EOF
+[boot]
+systemd=true
+
+[user]
+default=newusername
+EOF
+```
+
+### 3. Resolve Windows 11 WSLg Wayland Conflicts
+
+Windows 11 injects a Wayland socket that causes MATE to crash/segfault on startup.
+
+1. Install the full MATE desktop environment and XRDP:
 
 ```bash
-sudo tee /etc/wsl.conf > /dev/null <<EOF ### && 'EOF' **Fix **Resolve --shutdown -y 1. 11 1]. 1]: 2. 3. 3389[cite: 3390 4. << Apply Change Conflicts:** Create Desktop EOF Environment Fixes Install MATE OS, Parrot Port PowerShell Restart Segfaults:** WSL WSLg Wayland Windows X11 XRDP XRDP[cite: [boot] [user] `.xsession` `/etc/xrdp/xrdp.ini`[cite: ``` ```bash ```powershell a and apt boot[cite: by cat cause changes clean completely crashes[cite: default="newusername" desktop down editing file[cite: force full-upgrade in, injected install log opening parrot-desktop-mate parrot-interface port reserves shutting startup sudo system[cite: systemd="true" terminal the to update variables wsl xrdp> ~/.xsession
+sudo apt update && sudo apt full-upgrade -y
+sudo apt install parrot-interface parrot-desktop-mate xrdp -y
+
+```
+
+2. Clean the environment variables completely by creating an `.xsession` file:
+
+```bash
+cat << 'EOF' > ~/.xsession
 #!/bin/sh
 export XDG_SESSION_DESKTOP=mate
 export XDG_SESSION_TYPE=x11
@@ -42,10 +61,8 @@ EOF
 chmod +x ~/.xsession
 ```
 
-
 3. Point XRDP to this file by editing `/etc/xrdp/startwm.sh`. Replace the last few `test -x` and `exec` lines with: `exec ~/.xsession`.
-
-
+4. By default, XRDP runs on port 3389, which Windows reserves. Edit `/etc/xrdp/xrdp.ini` and change the port: `port=3390`.
 
 ### 4. GUI Launcher Utility Script
 
@@ -65,12 +82,9 @@ echo "================================================="
 echo "Open 'Remote Desktop Connection' in Windows."
 echo "Connect to: localhost:3390 OR $IP_ADDRESS:3390"
 echo "================================================="
-
 ```
 
 Make it executable (`chmod +x ~/launch_gui.sh`). Run `./launch_gui.sh` when the desktop is needed, then connect via Windows Remote Desktop to `localhost:3390`.
-
-
 
 ## Phase 2: Lightweight Editors for WSL2
 
@@ -79,8 +93,6 @@ Running a GUI through WSL2 introduces overhead, making heavy Electron apps subop
 * **Geany (GUI):** A fast, lightweight IDE suitable for the MATE desktop (`sudo apt install geany`).
 * **Micro (Terminal):** A modern, mouse-compatible terminal editor with standard hotkeys (`sudo apt install micro`).
 * **Zed (GUI):** A high-performance Rust-based editor.
-
-
 
 ## Phase 3: The Windows-to-Linux Flutter Workflow
 
@@ -109,7 +121,7 @@ Type=Application
 Categories=Utility;
 ```
 
-**File 3: `namida_sync.png`**  
+**File 3: `namida_sync.png`**   
 The application icon (must match the name in the `.desktop` file).
 
 **File 4: `build_linux.sh` (In the root directory)**
@@ -133,7 +145,7 @@ chmod +x AppDir/AppRun
 
 echo "Checking for appimagetool..."
 if [ ! -f "appimagetool-x86_64.AppImage" ]; then
-    wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+    wget -q [https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage](https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage)
     chmod +x appimagetool-x86_64.AppImage
 fi
 
@@ -145,15 +157,37 @@ rm -rf AppDir
 echo "Done! The AppImage is ready in the project root: Namida_Sync-x86_64.AppImage."
 ```
 
+
 *These files must be committed to the Git repository on Windows.*
 
 ### 2. WSL2 Setup (The Build Environment)
 
-1. Clone the repository into the native Linux filesystem (eg: `~/flutter_projects/namida_sync`). **Building across the `/mnt/c/` Windows partition should be avoided.**
-2. Make the script executable:
+1. Clone the repository into the native Linux filesystem (e.g., `~/flutter_projects/`). **Building across the `/mnt/c/` Windows partition should be avoided.**
     ```bash
-    chmod +x build_linux.sh
+    git clone [https://github.com/010101-sans/namida_sync.git](https://github.com/010101-sans/namida_sync.git)
     ```
+
+
+2. Navigate into the cloned project directory:
+    ```bash
+    cd namida_sync
+    ```
+
+
+3. **Restore Ignored Configuration Files:** Because certain configuration and credential files contain sensitive keys, they are typically ignored by Git. You must manually recreate them in your WSL environment before building:
+    ```bash
+    nano firebase.json
+    nano lib/firebase_options.dart
+    nano lib/utils/credentials.dart
+    ```
+
+
+*(Paste the corresponding contents from your main Windows environment into these files and save them).*  
+
+4. Make the build script executable:
+   ```bash
+   chmod +x build_linux.sh
+   ```
 
 
 
@@ -161,12 +195,12 @@ echo "Done! The AppImage is ready in the project root: Namida_Sync-x86_64.AppIma
 
 When code updates are complete on Windows:
 
-1. Commit and push changes to Git.
-2. Open the Parrot OS terminal and run:
-
+1. Commit and push changes to Git from Windows.
+2. Open the Parrot OS terminal, ensure you are in the project directory, and run:
     ```bash
     git pull
     ./build_linux.sh
     ```
 
-3. Once the script compiles the AppImage, retrieve the `.AppImage` file to Windows by running `explorer.exe .` in the Parrot terminal and moving the file to the Windows environment.
+3. The script will output the build progress, generate squashfs, and complete the packaging process.
+4. Once the script finishes and states `Done! The AppImage is ready in the project root: Namida_Sync-x86_64.AppImage`, retrieve the file to Windows by running `explorer.exe .` in the Parrot terminal and dragging the file to your host environment or my prefered way, which is to move the generated `Namida_Sync-x86_64.AppImage` to window's codebase so that it can be released along with Android and Windows versions on GitHub.
