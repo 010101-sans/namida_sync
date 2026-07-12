@@ -13,13 +13,16 @@ import 'screens/dashboard/dashboard_screen.dart';
 import 'dart:io';
 
 void main(List<String> args) async {
+  
   // [1] Ensure Flutter bindings are initialized before any async operations.
   WidgetsFlutterBinding.ensureInitialized();
   // debugPrint('[main] Flutter bindings initialized.');
 
-  // [2] Initialize Firebase with platform-specific options before running the app. 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // debugPrint('[main] Firebase initialized.');
+  // [2] Initialize Firebase with platform-specific options before running the app (Skipped on Linux). 
+  if (!Platform.isLinux) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    // debugPrint('[main] Firebase initialized.');
+  }
 
   // [3] Global config for intent data
   String? globalBackupPath;
@@ -42,10 +45,10 @@ void main(List<String> args) async {
     return null;
   });
 
-  // [5] On Windows, parse command-line arguments for config
+  // [5] On Windows and Linux, parse command-line arguments for config
   String? initialBackupPath;
   List<String>? initialMusicFolders;
-  if (Platform.isWindows && args.isNotEmpty) {
+  if ((Platform.isWindows || Platform.isLinux) && args.isNotEmpty) {
     for (final arg in args) {
       if (arg.startsWith('--backupPath=')) {
         initialBackupPath = arg.substring('--backupPath='.length).replaceAll('"', '');
@@ -90,7 +93,7 @@ class NamidaSyncApp extends StatelessWidget {
             title: 'Namida Sync',
             theme: AppTheme.getAppTheme(isLight: true),
             darkTheme: AppTheme.getAppTheme(isLight: false),
-            themeMode: themeProvider.themeMode,
+            themeMode: ThemeMode.dark,
             home: DashBoardScreen(initialBackupPath: initialBackupPath, initialMusicFolders: initialMusicFolders),
             debugShowCheckedModeBanner: false,
           );

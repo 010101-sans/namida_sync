@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in_all_platforms/google_sign_in_all_platforms.dart';
+import 'dart:io';
 import '../utils/utils.dart';
 
 class GoogleAuthService extends ChangeNotifier {
@@ -23,6 +24,7 @@ class GoogleAuthService extends ChangeNotifier {
 
   // [2] Attempt silent sign-in on startup and notify listeners.
   Future<void> _init() async {
+    if (Platform.isLinux) return;
     _currentCreds = await _googleSignIn.signIn();
     // debugPrint('[GoogleAuthService] Silent sign-in result: ${_currentCreds != null ? 'Success' : 'No credentials'}');
     notifyListeners();
@@ -30,11 +32,15 @@ class GoogleAuthService extends ChangeNotifier {
 
   // Public method for silent sign-in, to be called by provider
   Future<void> silentSignIn() async {
+    if (Platform.isLinux) return; 
     await _init();
   }
 
   // [3] Initiate Google sign-in flow and update credentials.
   Future<GoogleSignInCredentials?> signIn() async {
+
+    if (Platform.isLinux) return null;
+
     // debugPrint('[GoogleAuthService] Starting Google sign-in flow.');
     final creds = await _googleSignIn.signIn();
     if (creds != null) {
@@ -49,6 +55,9 @@ class GoogleAuthService extends ChangeNotifier {
 
   // [4] Sign out from Google and clear credentials.
   Future<void> signOut() async {
+
+    if (Platform.isLinux) return;
+
     // debugPrint('[GoogleAuthService] Signing out from Google.');
     await _googleSignIn.signOut();
     _currentCreds = null;
@@ -57,6 +66,8 @@ class GoogleAuthService extends ChangeNotifier {
 
   // [5] Get authentication headers for Google API requests.
   Future<Map<String, String>?> getAuthHeaders() async {
+    if (Platform.isLinux) return null;
+
     final creds = _currentCreds ?? await _googleSignIn.signIn();
     if (creds == null) {
       // debugPrint('[GoogleAuthService] No credentials available for auth headers.');
@@ -67,6 +78,7 @@ class GoogleAuthService extends ChangeNotifier {
 
   // [6] Check if the user is currently signed in.
   Future<bool> isSignedIn() async {
+    if (Platform.isLinux) return false;
     return _currentCreds != null;
   }
 }

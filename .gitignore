@@ -55,3 +55,6 @@ release/
 lib/utils/credentials.dart
 firebase.json
 lib/firebase_options.dart
+
+# Linux Build
+*.AppImage

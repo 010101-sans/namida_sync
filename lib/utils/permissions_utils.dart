@@ -2,41 +2,49 @@ import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionsUtil {
-  // [1] Checks if any relevant storage/media permission is granted.
+
+  // [1] Checks if the required storage permission is granted for raw file access.
   static Future<bool> hasStoragePermission() async {
+  
     if (!Platform.isAndroid) return true;
-    final granted =
-        await Permission.storage.isGranted ||
-        await Permission.photos.isGranted ||
-        await Permission.videos.isGranted ||
-        await Permission.audio.isGranted ||
-        await Permission.manageExternalStorage.isGranted;
-    // Print debug info about permission check
-    // debugPrint('[PermissionsUtil] Storage/media permission granted: $granted');
-    return granted;
+
+    // Check if we have "All Files Access" (Required for SD Cards on Android 11+)
+    if (await Permission.manageExternalStorage.isGranted) {
+      return true;
+    }
+
+    // Fallback check for Android 10 and below
+    if (await Permission.storage.isGranted) {
+      return true;
+    }
+    
+    return false;
   }
 
   // [2] Requests the appropriate storage/media permissions for the current Android version.
   static Future<bool> requestStoragePermission() async {
+  
     if (!Platform.isAndroid) return true;
 
-    // Android 13+ (API 33+): Request granular media permissions
-    // debugPrint('[PermissionsUtil] Requesting photos, videos, and audio permissions.');
+    // 1. Try requesting All Files Access first (Android 11+)
+    // This is the ONLY way to read raw paths on SD cards via dart:io
+    final manageStatus = await Permission.manageExternalStorage.request();
+    if (manageStatus.isGranted) {
+      return true;
+    }
+
+    // 2. If that fails or is unsupported (Android 10 and below), fallback to legacy storage
+    final storageStatus = await Permission.storage.request();
+    if (storageStatus.isGranted) {
+      return true;
+    }
+
+    // 3. If we still don't have it, try granular as an absolute last resort 
+    // (Note: This will likely only allow access to internal storage)
+    await Permission.audio.request();
     await Permission.photos.request();
     await Permission.videos.request();
-    await Permission.audio.request();
 
-    // Android 11+ (API 30+): Optionally request MANAGE_EXTERNAL_STORAGE
-    // debugPrint('[PermissionsUtil] Requesting MANAGE_EXTERNAL_STORAGE permission.');
-    await Permission.manageExternalStorage.request();
-
-    // Android 10 and below: Request legacy storage permissions
-    // debugPrint('[PermissionsUtil] Requesting legacy storage permission.');
-    await Permission.storage.request();
-
-    // Check if any permission is granted
-    final granted = await hasStoragePermission();
-    // debugPrint('[PermissionsUtil] Final storage/media permission granted: $granted');
-    return granted;
+    return await hasStoragePermission();
   }
 }

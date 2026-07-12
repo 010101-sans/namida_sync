@@ -17,6 +17,7 @@ class LocalNetworkService {
   static const Duration discoveryTimeout = Duration(seconds: 2);
   HttpServer? _httpServer;
   bool _isServerRunning = false;
+  int _activePort = defaultPort;
 
   Map<String, dynamic>? _latestManifestJson;
   List<String> _receivedFilePaths = [];
@@ -49,6 +50,9 @@ class LocalNetworkService {
       return 'C:/NamidaSync';
     } else if (Platform.isAndroid) {
       return '/storage/emulated/0/NamidaSync';
+    } else if (Platform.isLinux) {
+      final home = Platform.environment['HOME'] ?? '';
+      return '$home/.cache/NamidaSync';
     } else {
       return '${Directory.systemTemp.path}/NamidaSync';
     }
@@ -109,7 +113,14 @@ class LocalNetworkService {
       provider!.reset();
     }
 
-    _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
+    try {
+      _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
+      _activePort = defaultPort;
+    } catch (e) {
+      // Fallback for same-machine testing (WSL + Windows simultaneously)
+      _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort + 1);
+      _activePort = defaultPort + 1;
+    }
     _isServerRunning = true;
     // debugPrint('[LocalNetworkService] HTTP server started on port $defaultPort');
 
@@ -423,38 +434,49 @@ class LocalNetworkService {
   Future<List<DiscoveredDevice>> httpSubnetScan({required String alias}) async {
     final List<DiscoveredDevice> devices = [];
     final localIp = await getLocalIpAddress();
-    if (localIp == null) return devices;
-    final subnet = localIp.substring(0, localIp.lastIndexOf('.'));
+    
+    // Build a list of IPs to scan. Include local subnet AND localhost for same-machine testing.
+    final ipsToScan = <String>['127.0.0.1']; 
+    if (localIp != null) {
+      final subnet = localIp.substring(0, localIp.lastIndexOf('.'));
+      for (int i = 1; i < 255; i++) {
+        final ip = '$subnet.$i';
+        if (ip != localIp) ipsToScan.add(ip);
+      }
+    }
+
     final futures = <Future>[];
-    for (int i = 1; i < 255; i++) {
-      final ip = '$subnet.$i';
-      if (ip == localIp) continue;
-      futures.add(
-        HttpClient()
-            .getUrl(Uri.parse('http://$ip:$defaultPort/api/namidasync/v1/register'))
-            .timeout(const Duration(milliseconds: 1000))
-            .then((req) => req.close())
-            .then((resp) async {
-              if (resp.statusCode == 200) {
-                final body = await resp.transform(utf8.decoder).join();
-                try {
-                  final data = jsonDecode(body);
-                  // debugPrint('[LocalNetworkService] HTTP scan found device at $ip: $data');
-                  devices.add(
-                    DiscoveredDevice(
-                      alias: data['alias'] ?? 'Unknown',
-                      ip: ip,
-                      port: defaultPort,
-                      uuid: data['uuid'] ?? '',
-                    ),
-                  );
-                } catch (e) {
-                  // debugPrint('[LocalNetworkService] Error decoding HTTP scan response: $e');
+    for (final ip in ipsToScan) {
+      // Scan both default and fallback ports
+      for (final portToCheck in [defaultPort, defaultPort + 1]) {
+        // Skip scanning our exact own port on localhost to avoid discovering ourselves
+        if (ip == '127.0.0.1' && portToCheck == _activePort) continue; 
+        
+        futures.add(
+          HttpClient()
+              .getUrl(Uri.parse('http://$ip:$portToCheck/api/namidasync/v1/register'))
+              .timeout(const Duration(milliseconds: 1000))
+              .then((req) => req.close())
+              .then((resp) async {
+                if (resp.statusCode == 200) {
+                  final body = await resp.transform(utf8.decoder).join();
+                  try {
+                    final data = jsonDecode(body);
+                    // debugPrint('[LocalNetworkService] HTTP scan found device at $ip: $data');
+                    devices.add(
+                      DiscoveredDevice(
+                        alias: data['alias'] ?? 'Unknown',
+                        ip: ip,
+                        port: data['port'] ?? portToCheck,
+                        uuid: data['uuid'] ?? '',
+                      ),
+                    );
+                  } catch (e) {}
                 }
-              }
-            })
-            .catchError((_) {}),
-      );
+              })
+              .catchError((_) {}),
+        );
+      }
     }
     await Future.wait(futures);
     return devices;
@@ -464,8 +486,8 @@ class LocalNetworkService {
   Future<List<DiscoveredDevice>> discoverDevices({String alias = 'NamidaSync'}) async {
     
     // Send hello so others can discover us
-    await sendHello(alias: alias);
-    
+    await sendHello(alias: alias, port: _activePort);
+
     // Listen for hellos from others
     final multicastDevices = await listenForHellos();
     

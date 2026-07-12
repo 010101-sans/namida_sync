@@ -55,10 +55,14 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerPr
         String? latestBackupZipPath;
         if (backupFolderPath != null && backupFolderPath.isNotEmpty) {
           final dir = Directory(backupFolderPath);
-          final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.zip')).toList();
-          files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-          if (files.isNotEmpty) {
-            latestBackupZipPath = files.first.path;
+          
+          // ONLY list files if the directory actually exists
+          if (dir.existsSync()) {
+            final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.zip')).toList();
+            files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+            if (files.isNotEmpty) {
+              latestBackupZipPath = files.first.path;
+            }
           }
         }
 
@@ -164,12 +168,15 @@ class _LocalSendBackupCardState extends State<LocalSendBackupCard> with TickerPr
                       final isSelected = selectedDevice == device;
                       final isTargetAndroid = device.toLowerCase().contains('android');
                       final isTargetWindows = device.toLowerCase().contains('windows');
+                      final isTargetLinux = device.toLowerCase().contains('linux');
                       
                       final deviceColor = isTargetAndroid 
                           ? AppColors.successGreen
                           : isTargetWindows 
                               ? Colors.blue.shade600
-                              : colorScheme.primary;
+                              : isTargetLinux
+                                  ? Colors.green.shade600 
+                                  : colorScheme.primary; 
                       
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),

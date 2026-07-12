@@ -11,6 +11,9 @@ class FolderService {
       return '/storage/emulated/0/Namida/Backups';
     } else if (Platform.isWindows) {
       return 'C:/Namida/Backups';
+    } else if (Platform.isLinux) {
+      final home = Platform.environment['HOME'] ?? '';
+      return '$home/.local/share/Namida/Backups';
     }
     return '';
   }
@@ -22,6 +25,9 @@ class FolderService {
     } else if (Platform.isWindows) {
       final user = Platform.environment['USERNAME'] ?? 'User';
       return ['C:/Users/$user/Music/Namida'];
+    } else if (Platform.isLinux) {
+      final home = Platform.environment['HOME'] ?? '';
+      return ['$home/Music/Namida'];
     }
     return [];
   }

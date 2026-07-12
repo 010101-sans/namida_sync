@@ -298,20 +298,25 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
+
+      // Inside your build method:
       body: RefreshIndicator(
         onRefresh: () async {
           _findLatestBackupFile();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: Platform.isWindows ? _buildWindowsLayout(scrollable: false) : _buildAndroidLayout(scrollable: false),
+          child: isDesktop ? _buildDesktopLayout(scrollable: false) : _buildMobileLayout(scrollable: false),
         ),
       ),
-      backgroundColor: Theme.of(context).brightness == Brightness.light ? const Color(0xFFF8F7FA) : colorScheme.surface,
+      backgroundColor: colorScheme.surface,
     );
   }
 
-  Widget _buildAndroidLayout({bool scrollable = true}) {
+  // Helper getter for cleaner code
+  bool get isDesktop => Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+
+  Widget _buildMobileLayout({bool scrollable = true}) {
     return Consumer<GoogleAuthProvider>(
       builder: (context, authProvider, _) {
         // [1] Main Content Column
@@ -382,22 +387,23 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                             ),
                             const SizedBox(width: 16),
                             // [4.2] Google Drive
-                            Expanded(
-                              child: IconLabelButton(
-                                icon: Iconsax.cloud,
-                                label: 'Google Drive',
-                                selected: _selectedSyncMethod == 1,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedSyncMethod = 1;
-                                    _pageController.animateToPage(
-                                      1,
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeInOut,
-                                    );
-                                  });
-                                },
-                              ),
+                            if (!Platform.isLinux)
+                              Expanded(
+                                child: IconLabelButton(
+                                  icon: Iconsax.cloud,
+                                  label: 'Google Drive',
+                                  selected: _selectedSyncMethod == 1,
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedSyncMethod = 1;
+                                      _pageController.animateToPage(
+                                        1,
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeInOut,
+                                      );
+                                    });
+                                  },
+                                ),
                             ),
                           ],
                         );
@@ -432,7 +438,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
     );
   }
 
-  Widget _buildWindowsLayout({bool scrollable = true}) {
+  Widget _buildDesktopLayout({bool scrollable = true}) {
     return Consumer<GoogleAuthProvider>(
       builder: (context, authProvider, _) {
         return ChangeNotifierProvider<LocalNetworkProvider>(
@@ -553,7 +559,8 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                           // [2.1] Local Transfer Page
                           LocalTransferPage(),
                           // [2.2] Google Drive Page
-                          GoogleDrivePage(),
+                          if (!Platform.isLinux)
+                            GoogleDrivePage(),
                         ],
                       ),
                     ),
@@ -566,4 +573,4 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
       },
     );
   }
-} // TODO : Implement left and right column layout for windows
+}
