@@ -23,8 +23,8 @@ class AboutScreen extends StatelessWidget {
     final appLogo = 'assets/images/about/namida_sync_logo.png';
     final devProfile = 'assets/images/about/developer_profile.jpg';
     const appName = 'Namida Sync';
-    // const buildDate = '2025';
-    String appVersion = '1.0.0';
+    // const buildDate = '2026';
+    String appVersion = '2.0.0-beta.1';
     try {
       final pubspec = DefaultAssetBundle.of(context).loadString('pubspec.yaml');
       pubspec.then((yamlString) {
@@ -137,7 +137,7 @@ class AboutScreen extends StatelessWidget {
                             leading: const Icon(Iconsax.code),
                             title: const Text('GitHub'),
                             subtitle: const Text('See Project Code on GitHub'),
-                            onTap: () => _launchUrl('dummy.link'),
+                            onTap: () => _launchUrl('https://github.com/010101-sans/namida_sync'),
                           ),
                           
                           // [3.2] Issues/Features ListTile
@@ -145,7 +145,7 @@ class AboutScreen extends StatelessWidget {
                             leading: const Icon(Iconsax.activity),
                             title: const Text('Issues/Features'),
                             subtitle: const Text('Open an issue or suggestion on GitHub'),
-                            onTap: () => _launchUrl('dummy.link'),
+                            onTap: () => _launchUrl('https://github.com/010101-sans/namida_sync/issues'),
                           ),
                         ],
                       ),

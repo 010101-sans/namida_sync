@@ -113,14 +113,9 @@ class LocalNetworkService {
       provider!.reset();
     }
 
-    try {
-      _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
-      _activePort = defaultPort;
-    } catch (e) {
-      // Fallback for same-machine testing (WSL + Windows simultaneously)
-      _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort + 1);
-      _activePort = defaultPort + 1;
-    }
+    _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, defaultPort);
+    _activePort = defaultPort;
+    
     _isServerRunning = true;
     // debugPrint('[LocalNetworkService] HTTP server started on port $defaultPort');
 
