@@ -274,12 +274,16 @@ class LocalNetworkProvider extends ChangeNotifier {
           final destZipPath = normalizePath('$backupFolder/${manifest.backupName}');
           final destZipFile = File(destZipPath);
 
+          // Create the parent backup directory if it doesn't exist
+          await destZipFile.parent.create(recursive: true);
+
           if (!await destZipFile.exists()) {
             await backupZipFile.copy(destZipPath);
             // debugPrint('[LocalNetworkProvider] Backup zip restored to: $destZipPath');
           } else {
             // debugPrint('[LocalNetworkProvider] Backup zip already exists, skipping: $destZipPath');
           }
+
         } else {
           // debugPrint('[LocalNetworkProvider] No backup folder configured, skipping backup zip restore');
         }
@@ -390,6 +394,16 @@ class LocalNetworkProvider extends ChangeNotifier {
       error = 'Error during restore: $e';
       // debugPrint('[LocalNetworkProvider] Restore error: $e');
     }
+
+    // Clean up the temporary cache to free up disk space
+      try {
+        final tempDir = Directory(tempRoot);
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+        }
+      } catch (e) {
+        // debugPrint('[LocalNetworkProvider] Error cleaning up temp files: $e');
+      }
 
     notifyListeners();
   }
