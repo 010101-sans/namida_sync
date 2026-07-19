@@ -76,6 +76,8 @@ flutter build apk --release
 ```
 - Output: `build/app/outputs/flutter-apk/app-release.apk`
 
+Now move the generated app-release.apk into the backup/version/... (collect all builds in here)
+
 #### b. Split APKs (per architecture, smaller size)
 ```sh
 flutter build apk --release --split-per-abi
@@ -94,7 +96,7 @@ flutter build appbundle --release
 
 ### Windows
 
-#### a. Build Windows release
+#### Option A: Build Windows release
 ```sh
 flutter build windows --release
 ```
@@ -104,11 +106,9 @@ flutter build windows --release
   - All required `.dll` files (e.g., `flutter_windows.dll`, `vcruntime140.dll`, `msvcp140.dll`, etc.)
   - The `data/` directory
 
-#### b. Create Windows Installer
+#### Option B: Create Windows Installer
 ```sh
 dart run inno_bundle:build --release
-```
-```sh
 "C:\Users\Lenovo\AppData\Local\Programs\Inno Setup 6\ISCC.exe" "build\windows\x64\installer\Release\inno-script.iss"
 ```
 - **Prerequisites:** Inno Setup 6 must be installed on your system
@@ -122,7 +122,7 @@ dart run inno_bundle:build --release
   - Install to `C:\Program Files\Namida Sync` by default
   - Automatically detect the installation location for better integration
 
-#### c. Package Windows build (Legacy - Portable)
+#### Option C: Package Windows build (Legacy - Portable)
 - **Note:** This method creates a portable version. For better user experience, use the installer above.
 - **Important:** Portable builds require zipping because they contain multiple files (`.exe`, `.dll` files, `data/` folder)
 - To create a zip for distribution (optional):
@@ -131,6 +131,13 @@ dart run inno_bundle:build --release
   zip -r NamidaSync-Windows-Portable-vX.Y.Z.zip Release/
   ```
 - Replace `vX.Y.Z` with your version number.
+
+### Linux
+
+- Copy the latest lib/ code and pubspec.yaml/ into the linux copy of the codebase
+- Frequently run `flutter pub get`
+- Run `build_linux.sh`
+- Move the generated AppImage back to windows copy of the codebase, and inside the release/version/ folder
 
 ## 3. Publishing
 
