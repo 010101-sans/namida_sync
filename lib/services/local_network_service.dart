@@ -466,6 +466,7 @@ class LocalNetworkService {
                         uuid: data['uuid'] ?? '',
                       ),
                     );
+                  // ignore: empty_catches
                   } catch (e) {}
                 }
               })

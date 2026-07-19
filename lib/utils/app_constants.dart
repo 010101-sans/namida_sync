@@ -2,8 +2,10 @@
 class AppConstants {
   // App Information
   static const String appName = 'Namida Sync';
-  static const String appVersion = '1.1.0';
+  static const String appVersion = '2.0.0-beta.1';
   static const String appDescription = 'A Flutter application for seamless backup and restore of the Namida music player environment and music library, with Google Drive integration.';
+  final appLogo = 'assets/images/about/namida_sync_logo.png';
+  final devProfile = 'assets/images/about/developer_profile.jpg';
   
   // File Operations
   static const String backupFilePrefix = 'Namida Backup - ';

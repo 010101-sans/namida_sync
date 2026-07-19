@@ -1,10 +1,12 @@
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/custom_card.dart';
+import '../../utils/utils.dart';
 
 class AboutScreen extends StatelessWidget {
+  
   const AboutScreen({super.key});
 
   // Helper method to launch URLs
@@ -22,18 +24,18 @@ class AboutScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final appLogo = 'assets/images/about/namida_sync_logo.png';
     final devProfile = 'assets/images/about/developer_profile.jpg';
-    const appName = 'Namida Sync';
+    // const appName = 'Namida Sync';
     // const buildDate = '2026';
-    String appVersion = '2.0.0-beta.1';
-    try {
-      final pubspec = DefaultAssetBundle.of(context).loadString('pubspec.yaml');
-      pubspec.then((yamlString) {
-        final versionMatch = RegExp(r'version:\s*([^\s\+]+)').firstMatch(yamlString);
-        if (versionMatch != null) {
-          appVersion = versionMatch.group(1) ?? appVersion;
-        }
-      });
-    } catch (_) {}
+    // final String appVersion = '2.0.0-beta.1';
+    // try {
+    //   final pubspec = DefaultAssetBundle.of(context).loadString('pubspec.yaml');
+    //   pubspec.then((yamlString) {
+    //     final versionMatch = RegExp(r'version:\s*([^\s\+]+)').firstMatch(yamlString);
+    //     if (versionMatch != null) {
+    //       appVersion = versionMatch.group(1) ?? AppConstants.appVersion;
+    //     }
+    //   });
+    // } catch (_) {}
 
     return Scaffold(
       appBar: AppBar(title: const Text('About')),
@@ -97,7 +99,7 @@ class AboutScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           
                           // [1.3] App Version
-                          Text('Version $appVersion', style: theme.textTheme.bodyMedium),
+                          Text('Version ${AppConstants.appVersion}', style: theme.textTheme.bodyMedium),
                         ],
                       ),
                     ),
@@ -120,7 +122,7 @@ class AboutScreen extends StatelessWidget {
                           
                           // [2.3] Developer Link
                           subtitle: const Text('GitHub'),
-                          onTap: () => _launchUrl('https://github.com/010101-sans'),
+                          onTap: () => _launchUrl('https://github.com/010101-sans'),                          
                         ),
                       ),
                     ),
@@ -165,8 +167,8 @@ class AboutScreen extends StatelessWidget {
                             subtitle: const Text('Licenses & Agreements Used by Namida Sync'),
                             onTap: () => showLicensePage(
                               context: context,
-                              applicationName: appName,
-                              applicationVersion: appVersion,
+                              applicationName: AppConstants.appName,
+                              applicationVersion: AppConstants.appVersion,
                             ),
                           ),
                           
@@ -174,7 +176,7 @@ class AboutScreen extends StatelessWidget {
                           ListTile(
                             leading: const Icon(Iconsax.verify),
                             title: const Text('App Version'),
-                            subtitle: Text(appVersion),
+                            subtitle: Text(AppConstants.appVersion),
                           ),
                         ],
                       ),

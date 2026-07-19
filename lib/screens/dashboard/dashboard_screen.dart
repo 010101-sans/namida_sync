@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter/services.dart';
 import 'package:expandable_page_view/expandable_page_view.dart';
+import 'package:http/http.dart' as http;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../about/about_screen.dart';
 import 'backup_folder_card.dart';
@@ -30,6 +33,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
   String? _latestBackupName;
   String? _latestBackupSize;
   bool _noBackupFile = false;
+  bool _isUpdateAvailable = false;
 
   late FolderProvider _folderProvider;
   late VoidCallback _folderListener;
@@ -46,7 +50,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
     _folderProvider = Provider.of<FolderProvider>(context, listen: false);
     _folderListener = _findLatestBackupFile;
     _folderProvider.addListener(_folderListener);
-    // debugPrint('[DashBoardScreen] initState: Listener added and folders will be loaded.');
 
     // On Windows, Apply initial config if present
     if (Platform.isWindows) {
@@ -115,16 +118,25 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
       }
       _folderProvider.loadFolders();
     });
+
+    _checkVersion();
   }
 
   @override
   void dispose() {
     _folderProvider.removeListener(_folderListener);
-    // debugPrint('[DashBoardScreen] dispose: Listener removed.');
     super.dispose();
   }
 
-  // [1] Find the latest backup file in the backup folder and update state.
+  Future<void> _checkVersion() async {
+    final hasUpdate = await checkForUpdates(AppConstants.appVersion);
+    if (mounted && hasUpdate) {
+      setState(() {
+        _isUpdateAvailable = true;
+      });
+    }
+  }
+
   void _findLatestBackupFile() {
     if (!mounted) return;
 
@@ -144,7 +156,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
           _noBackupFile = true;
         });
       }
-      // debugPrint('[DashBoardScreen] No backup file found in $path');
       return;
     }
 
@@ -154,13 +165,10 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         _latestBackupSize = formatFileSize(latest.lengthSync());
         _noBackupFile = false;
       });
-      // debugPrint('[DashBoardScreen] Latest backup file: $_latestBackupName ($_latestBackupSize)');
     }
   }
 
-  // [2] Let the user select a backup folder and update state.
   Future<void> _selectBackupFolder() async {
-    // debugPrint('[DashBoardScreen] User is selecting a backup folder.');
     try {
       final String? selected = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Select Backup Folder');
 
@@ -177,13 +185,10 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(UIHelpers.getErrorSnackBar(context, 'Error selecting folder: $e'));
       }
-      // debugPrint('[DashBoardScreen] Error selecting backup folder: $e');
     }
   }
 
-  // [3] Let the user add a music folder and update state.
   Future<void> _addMusicFolder() async {
-    // debugPrint('[DashBoardScreen] User is adding a music folder.');
     try {
       final String? selected = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Add Music Library Folder');
 
@@ -199,13 +204,10 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(UIHelpers.getErrorSnackBar(context, 'Error adding folder: $e'));
       }
-      // debugPrint('[DashBoardScreen] Error adding music folder: $e');
     }
   }
 
-  // [4] Remove a music folder at the given index after user confirmation.
   Future<void> _removeMusicFolder(int index) async {
-    // debugPrint('[DashBoardScreen] User is removing music folder at index $index.');
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -236,9 +238,30 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(UIHelpers.getErrorSnackBar(context, 'Error removing folder: $e'));
         }
-        // debugPrint('[DashBoardScreen] Error removing music folder: $e');
       }
     }
+  }
+
+  Future<bool> checkForUpdates(String currentAppVersion) async {
+    const url = 'https://api.github.com/repos/010101-sans/namida_sync/releases/latest';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final latestReleaseTag = data['tag_name'] as String;
+
+        String cleanCurrent = currentAppVersion.startsWith('v') ? currentAppVersion.substring(1) : currentAppVersion;
+        String cleanLatest = latestReleaseTag.startsWith('v') ? latestReleaseTag.substring(1) : latestReleaseTag;
+
+        Version currentVersion = Version.parse(cleanCurrent);
+        Version latestVersion = Version.parse(cleanLatest);
+
+        return latestVersion > currentVersion;
+      }
+    } catch (e) {
+      debugPrint('Error checking for updates: $e');
+    }
+    return false;
   }
 
   @override
@@ -264,27 +287,19 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
                   letterSpacing: 1.5,
-                  color: Color(0xFFed9e66),
+                  color: const Color(0xFFed9e66),
                 ),
               ),
             ],
           ),
         ),
         actions: [
-          //   Consumer<ThemeProvider>(
-          //     builder: (context, themeProvider, _) {
-          //       final isDark = Theme.of(context).brightness == Brightness.dark;
-          //       return IconButton(
-          //         icon: Icon(
-          //           isDark ? Iconsax.sun_1 : Iconsax.moon,
-          //           size: UIConstants.iconSizeL,
-          //           color: colorScheme.primary,
-          //         ),
-          //         tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-          //         onPressed: () => themeProvider.toggleTheme(),
-          //       );
-          //     },
-          //   ),
+          if (_isUpdateAvailable)
+            IconButton(
+              icon: Icon(Iconsax.arrow_circle_up, size: UIConstants.iconSizeL, color: Colors.green),
+              tooltip: 'Update Available',
+              onPressed: () {},
+            ),
           IconButton(
             icon: Icon(Iconsax.info_circle, size: UIConstants.iconSizeL, color: colorScheme.primary),
             tooltip: 'Help',
@@ -298,8 +313,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-
-      // Inside your build method:
       body: RefreshIndicator(
         onRefresh: () async {
           _findLatestBackupFile();
@@ -313,13 +326,11 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
     );
   }
 
-  // Helper getter for cleaner code
   bool get isDesktop => Platform.isWindows || Platform.isLinux || Platform.isMacOS;
 
   Widget _buildMobileLayout({bool scrollable = true}) {
     return Consumer<GoogleAuthProvider>(
       builder: (context, authProvider, _) {
-        // [1] Main Content Column
         return ChangeNotifierProvider<LocalNetworkProvider>(
           create: (_) {
             final service = LocalNetworkService();
@@ -329,14 +340,12 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
           },
           child: Consumer<FolderProvider>(
             builder: (context, folderProvider, _) {
-              // Wire the folder provider to the network provider
               final networkProvider = Provider.of<LocalNetworkProvider>(context, listen: false);
               networkProvider.setFolderProvider(folderProvider);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // [2] BackupFolderCard
                   Consumer<FolderProvider>(
                     builder: (context, folderProvider, _) => BackupFolderCard(
                       folderProvider: folderProvider,
@@ -347,8 +356,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                       onRefresh: _findLatestBackupFile,
                     ),
                   ),
-
-                  // [3] MusicLibraryFoldersCard
                   Consumer<FolderProvider>(
                     builder: (context, folderProvider, _) => MusicLibraryFoldersCard(
                       folderProvider: folderProvider,
@@ -359,7 +366,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                     ),
                   ),
 
-                  // [4] Row of IconLabelButtons for sync method selection
+                  // Method Selection Rows (Mobile)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 30),
                     child: LayoutBuilder(
@@ -367,7 +374,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // [4.1] Local Transfer
                             Expanded(
                               child: IconLabelButton(
                                 icon: Iconsax.radar_1,
@@ -385,9 +391,8 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // [4.2] Google Drive
-                            if (!Platform.isLinux)
+                            if (!Platform.isLinux) ...[
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: IconLabelButton(
                                   icon: Iconsax.cloud,
@@ -404,15 +409,14 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                                     });
                                   },
                                 ),
-                            ),
+                              ),
+                            ],
                           ],
                         );
                       },
                     ),
                   ),
                   const SizedBox(height: UIConstants.spacingM),
-
-                  // [5] ExpandablePageView for sync method sections
                   ExpandablePageView(
                     controller: _pageController,
                     onPageChanged: (index) {
@@ -421,13 +425,10 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                       });
                     },
                     children: [
-                      // [5.1] Local Transfer Page
                       LocalTransferPage(),
-                      // [5.2] Google Drive Page
-                      GoogleDrivePage(),
+                      if (!Platform.isLinux) GoogleDrivePage(),
                     ],
                   ),
-
                   const SizedBox(height: UIConstants.spacingL),
                 ],
               );
@@ -450,7 +451,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
           },
           child: Consumer<FolderProvider>(
             builder: (context, folderProvider, _) {
-              // Wire the folder provider to the network provider
               final networkProvider = Provider.of<LocalNetworkProvider>(context, listen: false);
               networkProvider.setFolderProvider(folderProvider);
 
@@ -459,13 +459,11 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // [1] Left Column: Backup, Music, Transfer Options
                     Flexible(
                       flex: 2,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // [1.1] BackupFolderCard
                           Consumer<FolderProvider>(
                             builder: (context, folderProvider, _) => BackupFolderCard(
                               folderProvider: folderProvider,
@@ -477,8 +475,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                
-                          // [1.2] MusicLibraryFoldersCard
                           Consumer<FolderProvider>(
                             builder: (context, folderProvider, _) => MusicLibraryFoldersCard(
                               folderProvider: folderProvider,
@@ -489,8 +485,8 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                
-                          // [1.3] Row of IconLabelButtons for sync method selection
+
+                          // Method Selection Rows (Desktop Layout)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                             child: LayoutBuilder(
@@ -498,7 +494,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                                 return Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    // [1.3.1] Local Transfer
                                     Expanded(
                                       child: IconLabelButton(
                                         icon: Iconsax.radar_1,
@@ -516,25 +511,26 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                                         },
                                       ),
                                     ),
-                                    const SizedBox(width: 16),
-                                    // [1.3.2] Google Drive
-                                    Expanded(
-                                      child: IconLabelButton(
-                                        icon: Iconsax.cloud,
-                                        label: 'Google Drive',
-                                        selected: _selectedSyncMethod == 1,
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedSyncMethod = 1;
-                                            _pageController.animateToPage(
-                                              1,
-                                              duration: const Duration(milliseconds: 300),
-                                              curve: Curves.easeInOut,
-                                            );
-                                          });
-                                        },
+                                    if (!Platform.isLinux) ...[
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: IconLabelButton(
+                                          icon: Iconsax.cloud,
+                                          label: 'Google Drive',
+                                          selected: _selectedSyncMethod == 1,
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedSyncMethod = 1;
+                                              _pageController.animateToPage(
+                                                1,
+                                                duration: const Duration(milliseconds: 300),
+                                                curve: Curves.easeInOut,
+                                              );
+                                            });
+                                          },
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 );
                               },
@@ -545,7 +541,6 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                       ),
                     ),
                     const SizedBox(width: 20),
-                    // [2] Right Column: ExpandablePageView
                     Flexible(
                       flex: 3,
                       child: ExpandablePageView(
@@ -556,11 +551,8 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
                           });
                         },
                         children: [
-                          // [2.1] Local Transfer Page
                           LocalTransferPage(),
-                          // [2.2] Google Drive Page
-                          if (!Platform.isLinux)
-                            GoogleDrivePage(),
+                          if (!Platform.isLinux) GoogleDrivePage(),
                         ],
                       ),
                     ),
